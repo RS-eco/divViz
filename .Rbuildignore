@@ -1,0 +1,13 @@
+^renv$
+^renv\.lock$
+^.*\.Rproj$
+^\.Rproj\.user$
+data-raw
+README.Rmd
+rsconnect
+figures
+deploy_app.R
+preprocess-data.R
+rawdata
+inst/extdata/database.db
+app.R
