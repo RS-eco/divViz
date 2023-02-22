@@ -1,10 +1,6 @@
 rm(list=ls()); invisible(gc())
 
 # Load packages ----
-#library(shiny) # comment when uploading app.R to server
-#library(shinyWidgets)
-#library(DT) # datatable()
-library(ggplot2)
 library(data.table)
 library(dplyr)
 library(dbplyr)
@@ -12,36 +8,8 @@ library(sf)
 library(tidyr)
 library(DBI)
 library(RSQLite)
-library(patchwork)
-library(raster)
-library(terra)
-library(ggspatial)
-library(scico)
-#library(plotly)
-
-# Needed for radar plot!!!
-# Almost identical to coord_polar()
-coord_straightpolar <- function(theta = 'x', start = 0, direction = 1, clip = "off") {
-  theta <- match.arg(theta, c("x", "y"))
-  r <- if (theta == "x") "y" else "x"
-  ggproto(NULL, CoordPolar, theta = theta, r = r, start = start,
-          direction = sign(direction), clip = clip,
-          # This is the different bit
-          is_linear = function(){TRUE})
-}
-
-# See dbplot
-# https://edgararuiz.github.io/dbplot/#raster
-# https://db.rstudio.com/best-practices/visualization/
 
 # Load data ----
-
-load("data/bavaria.rda")
-bavaria <- sf::st_transform(bavaria, 31468)
-load("data/districts.rda")
-districts <- sf::st_transform(districts, 31468)
-load("data/landkreise.rda")
-landkreise <- sf::st_transform(landkreise, 31468)
 load("data/tk_district.rda")
 
 # Load taxonomy for adding class/order values

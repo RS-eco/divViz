@@ -32,9 +32,10 @@ DBI::dbDisconnect(my_db)
 set.seed(123)
 ask_art$taxon <- substring(ask_art$art_id, 1,3)
 unique(ask_art$taxon)
-art_sub <- ask_art %>% select(taxon, art) %>% group_by(taxon) %>% 
-  sample_n(26)
-art_sub$art2 = rep(LETTERS, 5)
+art_sub <- ask_art %>% select(taxon, art) %>% 
+  filter(taxon %in% c("5IX", "1V0", "5IC", "5IF")) %>% 
+  group_by(taxon) %>% sample_n(13)
+art_sub$art2 = rep(LETTERS[1:13], 4)
 
 ask_art_sub <- ask_art %>% inner_join(art_sub) %>%
   unite("art2", c(taxon, art2), sep="_") %>%
@@ -46,7 +47,7 @@ ask_fuo <- ask_fuo %>% filter(ora_fuo_id %in% ask_art_sub$ora_fuo_id) %>%
 colnames(ask_fuo)
 
 # Create an ephemeral in-memory RSQLite database
-con <- dbConnect(RSQLite::SQLite(), dbname = "inst/extdata/database.db")
+con <- DBI::dbConnect(RSQLite::SQLite(), dbname = "inst/extdata/database.db")
 
 dbListTables(con)
 dbWriteTable(con, "art", ask_art_sub, overwrite=T)
