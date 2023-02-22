@@ -8,4 +8,4 @@
 library(rsconnect)
 rsconnect::deployApp(account="rs-eco", server = 'shinyapps.io',
                      #appDir = 'C:\\Users\\Documents\\R\\SHINY', appFiles=c('app.R','sales.RData','www/custom.css'),
-                     appName="divViz", appTitle="Visualisation tool for biodiversity data")
+                     appName="divViz_de", appTitle="Visualisations Tool für Biodiversitäts-Daten")

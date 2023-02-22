@@ -1,12 +1,12 @@
-divViz: Visualisation tool for biodiversity data
+divViz: Visualisierungs-Tool für Biodiversitäts-Daten
 ================
 
 ## Overview
 
-You are visiting the github repository of the divViz (Visualisation tool
-for biodiversity data) package. divViz is a shiny based [web
-app](https://rs-eco.shinyapps.io/divViz/) supporting interactive
-exploratory data analysis of simulated biodiversity data.
+You are visiting the github repository of the divViz
+(Visualisierungs-Tool für Biodiversitäts-Daten) package. divViz is a
+shiny based [web app](https://rs-eco.shinyapps.io/divViz_de/) supporting
+interactive exploratory data analysis of simulated biodiversity data.
 
 The main purpose of divViz is:
 
@@ -15,10 +15,10 @@ The main purpose of divViz is:
 
 This is what divViz looks like:
 
-<img src="figures/divViz.png" width="90%" style="display: block; margin: auto;" />
+<img src="figures/divViz_de.png" width="90%" style="display: block; margin: auto;" />
 
 If you are interested to see what divViz has to offer without diving
-into R, click [here](https://rs-eco.shinyapps.io/divViz/).
+into R, click [here](https://rs-eco.shinyapps.io/divViz_de/).
 
 ## Installation
 

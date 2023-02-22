@@ -7,7 +7,7 @@ Authors@R:
     person("RS-eco", email = "RS-eco@posteo.de", role = c("cre", "aut"))
 Maintainer: RS-eco <rs-eco@posteo.de>
 Description: R package for Shiny visualisation tool of biodiversity data.
-Imports: shiny, shinyWidgets, DT, ggplot2, data.table, sf, dplyr, patchwork, ggspatial, scico
+Imports: shiny, shinyWidgets, DT, ggplot2, data.table, dbplyr, dplyr, sf, tidyr, patchwork, ggspatial, scico
 Depends: R (>= 4.0)
 Suggests: knitr, rmarkdown
 License: file LICENSE
