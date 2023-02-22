@@ -4,7 +4,6 @@ rm(list=ls()); invisible(gc())
 library(data.table)
 library(dplyr)
 library(dbplyr)
-library(sf)
 library(tidyr)
 library(DBI)
 library(RSQLite)
@@ -18,22 +17,28 @@ download.file("https://github.com/RS-eco/bavDC/raw/main/data/taxonomyStd.rda", d
 load(temp); rm(temp)
 
 # Load ASK database
-my_db <- DBI::dbConnect(RSQLite::SQLite(), dbname = "inst/extdata/database.db")
+my_db <- DBI::dbConnect(RSQLite::SQLite(), dbname = "data/ASK.db")
 DBI::dbListTables(my_db)
 
 # Pull part of database including data on species 
-art_data <- dplyr::tbl(my_db, paste("art")) %>% dplyr::collect()
+art_data <- dplyr::tbl(my_db, paste("ask_art")) %>% dplyr::collect()
 
 # Pull part of database including fundorte
-fuo_data <- dplyr::tbl(my_db, paste("fuo")) %>% dplyr::collect()
+fuo_data <- dplyr::tbl(my_db, paste("ask_fuo")) %>% dplyr::collect()
 
 # Load background grid
-tk25 <- dplyr::tbl(my_db, "tk25") %>% dplyr::collect() %>%
+tk25 <- dplyr::tbl(my_db, "geo_tk25_quadranten") %>% dplyr::collect() %>%
   tidyr::unite(col="quadrant", c("KARTE", "QUADRANT"), sep="", remove = FALSE) %>% 
   dplyr::select(-c("KARTE_QUAD")) %>% mutate(quadrant = as.numeric(quadrant)) %>%
   as.data.frame() %>% dplyr::select(quadrant, KARTE, XQMITTE, YQMITTE, XLU, YLU, 
                                     XRU, YRU, XRO, YRO, XLO, YLO) %>%
   left_join(tk_district)
+
+#ask_art$taxon <- substring(ask_art$art_id, 1,3)
+
+fuo_data <- fuo_data %>% filter(ora_fuo_id %in% art_data$ora_fuo_id) %>%
+  select(ora_fuo_id, id, karte, quadrant)
+colnames(fuo_data)
 
 # Disconnect from database
 DBI::dbDisconnect(my_db); rm(my_db); invisible(gc())
@@ -52,10 +57,12 @@ rm(taxonomyStd, fuo_data, tk25, tk_district, tk25_rough); invisible(gc())
 # Create custom taxon vector (Aves, Lepidoptera, Odonata, Orthoptera)
 art_data$class_order <- "Aves"
 art_data$class_order[art_data$class == "Insecta"] <- art_data$order[art_data$class == "Insecta"]
-#unique(art_data$class_order)
 
 art_data <- art_data %>% dplyr::select(XLU, YLU, XRU, YLO, XLU_rough, XRU_rough, YLU_rough, YLO_rough, 
-                                       jahr, mon, karte, quadrant, district, class_order, family, art2) %>%
+                                       jahr, mon, karte, quadrant, district, class_order, family, art) %>%
   mutate(class_order = factor(class_order, levels=c("Aves", "Lepidoptera", "Odonata", "Orthoptera"), 
                               labels=c("Vögel", "Schmetterlinge", "Libellen", "Heuschrecken"))); invisible(gc())
-saveRDS(art_data, "inst/extdata/art_data.rds", compress="xz")
+
+# Save file
+if(!dir.exists("inst/extdata/")){dir.create("inst/extdata", recursive=T)}
+saveRDS(art_data, file="inst/extdata/art_data.rds", compress="xz")

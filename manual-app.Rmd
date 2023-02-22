@@ -1,0 +1,49 @@
+---
+title: "Anleitung zum Starten der lokalen Version des Visualisations-Tool für Biodiversitäts-Daten"
+author: ""
+output: pdf_document
+---
+
+## Installation von R & RStudio
+
+Zuerst müssen sie R (derzeit R version 4.2.1) und RStudio auf ihrem Rechner installiert haben.
+
+## R packages
+
+Als nächstes müssen sie die folgenden R packages installieren.
+
+Diese packages werden für die Prozessierung der Datenbank benötigt:
+
+```{r, eval=F}
+install.packages(c("data.table", "dplyr", "dbplyr", "tidyr", "DBI", "RSQLite"))
+```
+
+Diese zusätzlichen packages werden dann für das Visualisierungs-Tool selbst benötigt:
+
+```{r, eval=F}
+install.packages(c("shiny", "shinyWidgets", "DT", 
+                   "ggplot2", "patchwork", "ggspatial", "scico", 
+                   "sf"))
+```
+
+## Download des Visualisierungs-Tool
+
+Als nächstes müssen den Code für das Visualisierungs-Tools von Github herunterladen.
+
+Dafür öffnen sie folgenden Link in ihrem Browser: https://github.com/RS-eco/divViz/tree/de_local
+
+Dann klicken sie auf den grünen Knopf (Code) und klicken unten auf Download ZIP.
+
+Speichern sie die Datei lokal auf ihrem Rechner, entpacken sie den Ordner und öffnen diesen.
+
+## Vorbereitung des Visualisierungs-Tool
+
+Innerhalb des Ordners gibt es eine Datei divViz.Rproj klicken sie auf diese und nun sollte sich RStudio eigenständig öffnen.
+
+Als nächstes müssen sie noch die ASK-Datenbank (ASK.db) in den Unterordner ("data") kopieren, damit das R-Skript dann auf die ASK-Datenbank zugreifen kann.
+
+Nun müssen sie die Datei ("preprocess-data.R") aus dem heruntergeladenen Ordner öffnen und das komplette Skript einmal in R durchlaufen lassen.
+
+## Starten des Visualisierungs-Tool
+
+Danach ist das Visualisierungs-Tool start bereit und sie können es starten, indem sie die Datei ("app.R") öffnen und dann oben rechts auf den grünen Play-Knopf mit "Run App" drücken. Es sollte sich nun ein neues Fenster mit dem Visualisierungs-Tool öffnen.
