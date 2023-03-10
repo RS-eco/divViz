@@ -447,7 +447,8 @@ server <- function(input, output) {
                                        "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
           labs(x="", y="Artenvielfalt") + coord_polar("y", start=0) + theme_classic() + 
           theme(axis.text = element_blank(), axis.ticks = element_blank(),
-                axis.line = element_blank(), axis.title = element_blank())
+                axis.line = element_blank(), axis.title = element_blank(),
+                legend.position="none")
       }
     } else{
       sub_dat2 <- datadistrict() %>% tidyr::drop_na() %>% filter(var == "Number of occupied grid cells") %>% 
@@ -489,7 +490,8 @@ server <- function(input, output) {
                                        "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
           labs(x="", y="Anzahl an besetzten Gridzellen") + coord_polar("y", start=0) + 
             theme_classic() + theme(axis.text = element_blank(), axis.ticks = element_blank(),
-                  axis.line = element_blank(), axis.title = element_blank())
+                  axis.line = element_blank(), axis.title = element_blank(),
+                  legend.position="none")
       }
     }
     p1 + p2 + p3
@@ -563,7 +565,8 @@ server <- function(input, output) {
                                    "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="", y="Anzahl an Beobachtungen") + coord_polar("y", start=0) + theme_classic() + 
           theme(axis.text = element_blank(), axis.ticks = element_blank(),
-                axis.line = element_blank(), axis.title = element_blank())
+                axis.line = element_blank(), axis.title = element_blank(),
+                legend.position="none")
     }
     p4 + p5 + p6
   })
