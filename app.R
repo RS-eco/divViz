@@ -358,8 +358,8 @@ server <- function(input, output) {
     if(input$spec == "All Species"){
       p2 <- datatime() %>% ggplot() + 
         geom_bar(aes_string(x="jahr", y="`Species richness`", fill="class_order"), stat="identity") + 
-        scale_x_continuous(expand=expansion(add=c(0,0))) + 
-        scale_y_continuous(expand=expansion(add=c(0,1))) + 
+        scale_x_continuous(expand = expansion(add=c(0,0))) + 
+        scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
         scale_fill_manual(values = c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
                                      "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
         labs(x="Year", fill="Taxon") + theme_bw() +
@@ -370,8 +370,8 @@ server <- function(input, output) {
       p2 <- datatime() %>% ggplot() + 
         geom_bar(aes_string(x="jahr", y="`Number of occupied grid cells`",
                             fill="class_order"), stat="identity") + 
-        scale_x_continuous(expand=expansion(add=c(0,0))) + 
-        scale_y_continuous(expand=expansion(add=c(0,1))) + 
+        scale_x_continuous(expand = expansion(add=c(0,0))) + 
+        scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
         scale_fill_manual(values = c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
                                      "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
         labs(x="Year", y="Number of occupied grid cells", fill="Taxon") + theme_bw() + 
@@ -404,13 +404,28 @@ server <- function(input, output) {
                                                                     linetype="dashed"),
                                   panel.grid.major.y = element_line(colour= c(rep("gray60", nrow(df)), NA), linewidth=1/.pt,
                                                                     linetype="dashed"))
-      } else{
+      } else if(length(unique(sub_dat1$district)) == 2){
         p3 <- sub_dat1 %>% ggplot() + geom_bar(aes(x=district, y=val, fill=class_order), stat="identity") + 
           scale_fill_manual(values = c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
                                        "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
           labs(x="", y="Species richness") + 
-          scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
+          scale_y_continuous(expand = expansion(mult = c(0, .05))) + theme_bw() + 
           theme(legend.position = "none")
+      } else{
+        if(length(unique(sub_dat1$class_order)) == 1){
+          p3 <- plot_spacer()
+        } else{
+          sub_dat1 <- sub_dat1 %>% arrange(desc(class_order))
+          sub_dat1$cumsum <- cumsum(sub_dat1$val)
+          p3 <- sub_dat1 %>% ggplot() + geom_bar(aes(x="", y=val, fill=class_order), stat="identity", width=1) + 
+            geom_text(aes(x="", y=cumsum-(val/2), label=val)) + 
+            scale_fill_manual(values = c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
+                                         "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
+            coord_polar("y", start=0) + theme_classic() + 
+            theme(axis.text = element_blank(), axis.ticks = element_blank(),
+                  axis.line = element_blank(), axis.title = element_blank(),
+                  legend.position="none")
+        }
       }
     } else{
       sub_dat2 <- datadistrict() %>% na.omit() %>% .[var == "Number of occupied grid cells",] %>% 
@@ -426,7 +441,7 @@ server <- function(input, output) {
           geom_text(data=df, aes(x=x, y=y, label=label), size=9/.pt, colour="black") +
           scale_colour_manual(values=c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
                                        "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
-          scale_y_continuous(expand=c(0,0), limits=c(0,NA), breaks=df$label) +
+          scale_y_continuous(expand = expansion(mult = c(0, .05)), limits=c(0,NA), breaks=df$label) +
           theme_minimal() + theme(axis.text.y = element_blank(), 
                                   axis.ticks.y = element_blank(), legend.position="none",
                                   plot.background = element_rect(fill=NA, colour=NA),
@@ -436,13 +451,15 @@ server <- function(input, output) {
                                                                     linetype="dashed"),
                                   panel.grid.major.y = element_line(colour= c(rep("gray60", nrow(df)), NA), linewidth=1/.pt,
                                                                     linetype="dashed"))
-      } else{
+      } else if(length(unique(sub_dat2$district)) == 2){
         p3 <- sub_dat2 %>% ggplot() + geom_bar(aes(x=district, y=val, fill=class_order), stat="identity") + 
           scale_fill_manual(values = c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
                                        "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
           labs(x="", y="Number of occupied grid cells") + 
-          scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
+          scale_y_continuous(expand = expansion(mult = c(0, .05))) + theme_bw() + 
           theme(legend.position = "none")
+      } else{
+        p3 <- plot_spacer()
       }
     }
     p1 + p2 + p3
@@ -470,7 +487,7 @@ server <- function(input, output) {
       geom_bar(aes_string(x="jahr", y="`Number of records`",
                           fill="class_order"), stat="identity") + 
       scale_x_continuous(expand=expansion(add=c(0,0))) + 
-      scale_y_continuous(expand=expansion(add=c(0,5))) + 
+      scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
       scale_fill_manual(values = c("Aves" = '#1b9e77',
                                    "Lepidoptera"='#d95f02',
                                    "Odonata"='#7570b3',
@@ -493,7 +510,7 @@ server <- function(input, output) {
         geom_text(data=df, aes(x=x, y=y, label=label), size=9/.pt, colour="black") +
         scale_colour_manual(values=c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
                                      "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
-        scale_y_continuous(expand=c(0,0), limits=c(0,NA), breaks=df$label) +
+        scale_y_continuous(expand = expansion(mult = c(0, .05)), limits=c(0,NA), breaks=df$label) +
         theme_minimal() + theme(axis.text.y = element_blank(), 
                                 axis.ticks.y = element_blank(), legend.position="none",
                                 plot.background = element_rect(fill=NA, colour=NA),
@@ -503,14 +520,35 @@ server <- function(input, output) {
                                                                   linetype="dashed"),
                                 panel.grid.major.y = element_line(colour= c(rep("gray60", nrow(df)), NA), linewidth=1/.pt,
                                                                   linetype="dashed"))
-    } else{
+    } else if(length(unique(sub_dat3$district)) == 2){
       p6 <- sub_dat3 %>% ggplot() + geom_bar(aes(x=district, y=val, fill=class_order), stat="identity") + 
         scale_fill_manual(values = c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
                                      "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
         labs(x="", y="Number of records") + 
-        scale_y_continuous(expand=expansion(add=c(0,50))) + theme_bw() + 
+        scale_y_continuous(expand=expansion(mult = c(0, .05))) + theme_bw() + 
         theme(legend.position = "none")
-    }
+      
+      } else{
+        if(input$spec == "All Species"){
+          if(length(unique(sub_dat3$class_order)) == 1){
+            p6 <- plot_spacer()
+          } else{
+            sub_dat3 <- sub_dat3 %>% arrange(desc(class_order))
+          sub_dat3$cumsum <- cumsum(sub_dat3$val)
+          p6 <- sub_dat3 %>% ggplot() + geom_bar(aes(x="", y=val, fill=class_order), stat="identity", width=1) + 
+            geom_text(aes(x="", y=cumsum-(val/2), label=val)) + 
+            scale_fill_manual(values = c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
+                                         "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
+            coord_polar("y", start=0) + theme_classic() + 
+            theme(axis.text = element_blank(), axis.ticks = element_blank(),
+                  axis.line = element_blank(), axis.title = element_blank(),
+                  legend.position="none")
+          }
+        } else{
+          p6 <- plot_spacer()
+        }
+          
+      }
     p4 + p5 + p6
   })
   
@@ -563,7 +601,7 @@ server <- function(input, output) {
   
   output$plot9 <- renderPlot({
     if(input$spec == "All Species"){
-      dataspacetime()[, jahr2 := cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], by=as.numeric(input$interval)))] %>% 
+      dataspacetime()[, jahr2 := gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], by=as.numeric(input$interval))))))] %>% 
         na.omit() %>% 
         ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="`Species richness`")) + 
         facet_grid(.~jahr2) + 
@@ -582,8 +620,7 @@ server <- function(input, output) {
                            legend.title=element_text(size=12, face="bold"), 
                            strip.text=element_text(size=12, face="bold"))
     } else {
-      dataspacetime()[, jahr2 := cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], 
-                                                      by=as.numeric(input$interval)))] %>% 
+      dataspacetime()[, jahr2 := gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], by=as.numeric(input$interval))))))] %>% 
         na.omit() %>% 
         ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="class_order")) + 
         facet_grid(.~jahr2) + 
@@ -605,7 +642,7 @@ server <- function(input, output) {
   })
   
   output$plot10 <- renderPlot({
-    dataspacetime()[, jahr2 := cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], by=as.numeric(input$interval)))] %>% 
+    dataspacetime()[, jahr2 := gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], by=as.numeric(input$interval))))))] %>% 
       na.omit() %>% 
       ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="`Number of records`")) + 
       facet_grid(.~jahr2) + geom_sf(data=shape(), fill="transparent", col="black") +
