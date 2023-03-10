@@ -6,7 +6,7 @@ library(ggplot2)
 library(patchwork)
 library(shinyWidgets)
 #library(sf)
-library(dplyr) # Needed for sf filterin & piping!!!
+library(dplyr) # Needed for sf filtering & piping!!!
 #library(ggspatial)
 #library(scico)
 
@@ -66,22 +66,22 @@ ui <- fluidPage(
       sliderInput(inputId = "month_weight", label = "Months:", value = c(1, 12),
                   min = 1, max = 12, step = 1, ticks=F, sep=""),
       shinyWidgets::prettyCheckboxGroup(inputId = "class_order",
-                         label = "Choose one or multiple taxa to display:",
-                         choiceNames = taxa, choiceValues = taxa, 
-                         selected = taxa, icon = icon("check"), fill=T, inline=T),
+                                        label = "Choose one or multiple taxa to display:",
+                                        choiceNames = taxa, choiceValues = taxa, 
+                                        selected = taxa, icon = icon("check"), fill=T, inline=T),
       uiOutput("family_choice"),
       uiOutput("cat_choice"),
       helpText("Species are filtered according to time period, month and taxon."),
       shinyWidgets::pickerInput(inputId = "district", 
-                  label = "Choose one or multiple districts to display:", 
-                  choices = sort(unique(districts$BEZ_RBZ)),
-                  selected = sort(unique(districts$BEZ_RBZ)),
-                  options = list(
-                    `actions-box` = TRUE, 
-                    size = 10,
-                    `selected-text-format` = "count > 3",
-                    `count-selected-text` = "{0} districts chosen (of a total of {1})"
-                  ), multiple = TRUE),
+                                label = "Choose one or multiple districts to display:", 
+                                choices = sort(unique(districts$BEZ_RBZ)),
+                                selected = sort(unique(districts$BEZ_RBZ)),
+                                options = list(
+                                  `actions-box` = TRUE, 
+                                  size = 10,
+                                  `selected-text-format` = "count > 3",
+                                  `count-selected-text` = "{0} districts chosen (of a total of {1})"
+                                ), multiple = TRUE),
       helpText("Note: This tool only displays the collected raw data. 
              To apply a spatial or temporal filtering change the appropriate minimum number of values below."),
       numericInput(inputId = "sp_weight", label = "Minimum number of records per grid cell:", value = 1, min = 1, max = 50), 
@@ -169,7 +169,7 @@ server <- function(input, output) {
   
   datclassdist <- reactive({
     datclass()[jahr >= input$year_weight[1] & jahr <= input$year_weight[2] & 
-                      mon >= input$month_weight[1] & mon <= input$month_weight[2],
+                 mon >= input$month_weight[1] & mon <= input$month_weight[2],
     ][district %in% input$district,]
   })
   
@@ -208,29 +208,44 @@ server <- function(input, output) {
   })
   
   dataset <- reactive({
-    if(input$res == "TK25"){
-      dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
-                         `Number of records`=.N) , by = .(XLU, XRU, YLU, YLO, karte)
-                         ][`Number of records` >= input$sp_weight,]
-    } else {
-      dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
-                                  `Number of records`=.N) , by = .(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte)
-                         ][`Number of records` >= input$sp_weight,]
-      setnames(dat, old = c("XLU_rough", "XRU_rough", "YLU_rough", "YLO_rough"), 
-               new = c("XLU", "XRU", "YLU", "YLO"))
-      dat
+    if(input$spec != "All Species"){
+      if(input$res == "TK25"){
+        dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
+                                `Number of records`=.N) , by = .(XLU, XRU, YLU, YLO, karte, class_order)
+        ][`Number of records` >= input$sp_weight,]
+      } else {
+        dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
+                                `Number of records`=.N) , by = .(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order)
+        ][`Number of records` >= input$sp_weight,]
+        setnames(dat, old = c("XLU_rough", "XRU_rough", "YLU_rough", "YLO_rough"), 
+                 new = c("XLU", "XRU", "YLU", "YLO"))
+        dat
+      }
+    } else{
+      if(input$res == "TK25"){
+        dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
+                                `Number of records`=.N) , by = .(XLU, XRU, YLU, YLO, karte)
+        ][`Number of records` >= input$sp_weight,]
+      } else {
+        dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
+                                `Number of records`=.N) , by = .(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte)
+        ][`Number of records` >= input$sp_weight,]
+        setnames(dat, old = c("XLU_rough", "XRU_rough", "YLU_rough", "YLO_rough"), 
+                 new = c("XLU", "XRU", "YLU", "YLO"))
+        dat
+      }
     }
   })
   
   dataspeccomp <- reactive({
     if(input$res == "TK25"){
       datclassdist()[art2 %in% c(input$spec2, input$spec3),
-                     ][,list(`Species richness`=length(unique(art2)), 
-                                 `Number of records`=.N), by = .(XLU, XRU, YLU, YLO, art2, class_order)
-                     ][`Number of records` >= input$sp_weight,]
+      ][,list(`Species richness`=length(unique(art2)), 
+              `Number of records`=.N), by = .(XLU, XRU, YLU, YLO, art2, class_order)
+      ][`Number of records` >= input$sp_weight,]
     } else {
       dat <- datclassdist()[,list(`Species richness`=length(unique(art2)), 
-                             `Number of records`=.N), by = .(XLU_rough, XRU_rough, YLU_rough, YLO_rough, art2, class_order)
+                                  `Number of records`=.N), by = .(XLU_rough, XRU_rough, YLU_rough, YLO_rough, art2, class_order)
       ][`Number of records` >= input$sp_weight,]
       setnames(dat, old = c("XLU_rough", "XRU_rough", "YLU_rough", "YLO_rough"), 
                new = c("XLU", "XRU", "YLU", "YLO"))
@@ -241,13 +256,13 @@ server <- function(input, output) {
   datatime <- reactive({
     if(input$res == "TK25"){
       dataspec()[,list(`Species richness`=length(unique(art2)), 
-                `Number of records`=.N,
-                `Number of occupied grid cells`= length(unique(XLU, XRU, YLU, YLO))), by = .(jahr, class_order)
+                       `Number of records`=.N,
+                       `Number of occupied grid cells`= length(unique(XLU, XRU, YLU, YLO))), by = .(jahr, class_order)
       ][`Number of records` >= input$temp_weight,]
     } else {
       dataspec()[,list(`Species richness`=length(unique(art2)), 
-                `Number of records`=.N,
-                `Number of occupied grid cells`= length(unique(XLU_rough, XRU_rough, YLU_rough, YLO_rough))), by = .(jahr, class_order)
+                       `Number of records`=.N,
+                       `Number of occupied grid cells`= length(unique(XLU_rough, XRU_rough, YLU_rough, YLO_rough))), by = .(jahr, class_order)
       ][`Number of records` >= input$temp_weight,]
     }
   })
@@ -255,13 +270,13 @@ server <- function(input, output) {
   dataspacetime <- reactive({
     if(input$res == "TK25"){
       dataspec()[,list(`Species richness`=length(unique(art2)), 
-                `Number of records`=.N), 
-          by = .(jahr, XLU, XRU, YLU, YLO, karte, class_order)
+                       `Number of records`=.N), 
+                 by = .(jahr, XLU, XRU, YLU, YLO, karte, class_order)
       ][`Number of records` >= input$sp_weight,]
     } else {
       dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
-                `Number of records`=.N), 
-          by = .(jahr, XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order)
+                              `Number of records`=.N), 
+                        by = .(jahr, XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order)
       ][`Number of records` >= input$sp_weight,]
       setnames(dat, old = c("XLU_rough", "XRU_rough", "YLU_rough", "YLO_rough"), 
                new = c("XLU", "XRU", "YLU", "YLO"))
@@ -272,13 +287,13 @@ server <- function(input, output) {
   datagroup <- reactive({
     if(input$res == "TK25"){
       datclassdist()[,list(`Species richness`=length(unique(art2)), 
-                `Number of records`=.N), 
-          by = .(XLU, XRU, YLU, YLO, class_order)
+                           `Number of records`=.N), 
+                     by = .(XLU, XRU, YLU, YLO, class_order)
       ][`Number of records` >= input$sp_weight,]
     } else {
       dat <- datclass_dist()[,list(`Species richness`=length(unique(art2)), 
-                `Number of records`=.N), 
-          by = .(jahr, XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order)
+                                   `Number of records`=.N), 
+                             by = .(jahr, XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order)
       ][`Number of records` >= input$sp_weight,]
       setnames(dat, old = c("XLU_rough", "XRU_rough", "YLU_rough", "YLO_rough"), 
                new = c("XLU", "XRU", "YLU", "YLO"))
@@ -289,8 +304,8 @@ server <- function(input, output) {
   datadistrict <- reactive({
     dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
                             `Number of records`=.N,
-                           `Number of occupied grid cells`= n_distinct(XLU_rough, XRU_rough, YLU_rough, YLO_rough)), 
-                           by = .(district, class_order)]
+                            `Number of occupied grid cells`= n_distinct(XLU_rough, XRU_rough, YLU_rough, YLO_rough)), 
+                      by = .(district, class_order)]
     dat <- melt(dat, variable.name="var", value.name="val", id.vars=c("district", "class_order"))
     na.omit(dat)
   })
@@ -568,12 +583,12 @@ server <- function(input, output) {
                            strip.text=element_text(size=12, face="bold"))
     } else {
       dataspacetime()[, jahr2 := cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], 
-                                                              by=as.numeric(input$interval)))] %>% 
+                                                      by=as.numeric(input$interval)))] %>% 
         na.omit() %>% 
         ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="class_order")) + 
         facet_grid(.~jahr2) + 
         scale_fill_manual(values=c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
-                                     "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
+                                   "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
         coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
@@ -613,7 +628,7 @@ server <- function(input, output) {
     dataspeccomp() %>% ggplot() + 
       geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="class_order")) +  facet_grid(.~art2) + 
       scale_fill_manual(values=c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
-                                   "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
+                                 "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Longitude", y="Latitude") + 
       coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
@@ -651,14 +666,14 @@ server <- function(input, output) {
   
   output$table1 <- DT::renderDataTable(dataset()[, c(karte, `Species richness`, `Number of records`)],
                                        #setnames(dat1, karte, TK25),
-    options = list(
-      lengthMenu = list(c(18, 50, 100, -1), c('18', '50', '100', 'All')),
-      pageLength = 18
-    ))
+                                       options = list(
+                                         lengthMenu = list(c(18, 50, 100, -1), c('18', '50', '100', 'All')),
+                                         pageLength = 18
+                                       ))
   
   output$table2 <- DT::renderDataTable(
     datatime()[,c(class_order, jahr, `Species richness`, 
-                          `Number of records`, `Number of occupied grid cells`)],
+                  `Number of records`, `Number of occupied grid cells`)],
     #setnames(dat2, c(class_order, jahr), c(Taxon, Year))
     options = list(
       lengthMenu = list(c(18, 50, 100, -1), c('18', '50', '100', 'All')),
