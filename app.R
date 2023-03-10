@@ -502,7 +502,8 @@ server <- function(input, output) {
     if(input$spec == "Alle Arten"){
       p <- dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], 
                                                                    input$year_weight[2], by=as.numeric(input$interval)))) %>% 
-        tidyr::drop_na() %>% ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
+        mutate(jahr2 = gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", jahr2)))) %>% tidyr::drop_na() %>% 
+        ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
                                                              ymax="YLO", fill="`Species richness`")) + 
         facet_grid(.~jahr2) + 
         scico::scale_fill_scico(name="Artenvielfalt", palette="roma", na.value= "grey50", direction=-1) + 
@@ -519,7 +520,8 @@ server <- function(input, output) {
     } else {
       p <- dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], 
                                                                    by=as.numeric(input$interval)))) %>% 
-        tidyr::drop_na() %>% ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", 
+        mutate(jahr2 = gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", jahr2)))) %>% tidyr::drop_na() %>% 
+        ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", 
                                                              fill="class_order")) + 
         facet_grid(.~jahr2) + geom_sf(data=shape(), fill="transparent", col="black") +
         scale_fill_manual(values=c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
@@ -538,6 +540,7 @@ server <- function(input, output) {
   output$plot10 <- renderPlotly({
     p <- dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], 
                                                                  by=as.numeric(input$interval)))) %>% tidyr::drop_na() %>% 
+      mutate(jahr2 = gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", jahr2)))) %>% 
       ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="`Number of records`")) + 
       facet_grid(.~jahr2) + 
       scico::scale_fill_scico(name="Anzahl an\nBeobachtungen", palette="roma", 
