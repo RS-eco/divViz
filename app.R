@@ -209,17 +209,32 @@ server <- function(input, output){
   })
   
   dataset <- reactive({
-    if(input$res == "TK25"){
-      dataspec() %>% group_by(XLU, XRU, YLU, YLO, karte) %>% 
-        summarise(`Species richness`=n_distinct(art, na.rm=T), 
-                  `Number of records`=n()) %>% 
-        filter(`Number of records` >= input$sp_weight)
-    } else {
-      dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte) %>% 
-        summarise(`Species richness`=n_distinct(art, na.rm=T), 
-                  `Number of records`=n()) %>% 
-        rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
-        filter(`Number of records` >= input$sp_weight)
+    if(input$spec != "Alle Arten"){
+      if(input$res == "TK25"){
+        dataspec() %>% group_by(XLU, XRU, YLU, YLO, karte, class_order) %>% 
+          summarise(`Species richness`=n_distinct(art, na.rm=T), 
+                    `Number of records`=n()) %>% 
+          filter(`Number of records` >= input$sp_weight)
+      } else {
+        dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order) %>% 
+          summarise(`Species richness`=n_distinct(art, na.rm=T), 
+                    `Number of records`=n()) %>% 
+          rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
+          filter(`Number of records` >= input$sp_weight)
+      }
+    } else{
+      if(input$res == "TK25"){
+        dataspec() %>% group_by(XLU, XRU, YLU, YLO, karte) %>% 
+          summarise(`Species richness`=n_distinct(art, na.rm=T), 
+                    `Number of records`=n()) %>% 
+          filter(`Number of records` >= input$sp_weight)
+      } else {
+        dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte) %>% 
+          summarise(`Species richness`=n_distinct(art, na.rm=T), 
+                    `Number of records`=n()) %>% 
+          rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
+          filter(`Number of records` >= input$sp_weight)
+      }
     }
   })
   
