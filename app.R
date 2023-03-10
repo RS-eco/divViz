@@ -387,7 +387,7 @@ server <- function(input, output) {
         geom_bar(aes_string(x="jahr", y="`Species richness`",
                             fill="class_order"), stat="identity") + 
         scale_x_continuous(expand=expansion(add=c(0,0))) + 
-        scale_y_continuous(expand=expansion(add=c(0,1))) + 
+        scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
         scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="Jahr", fill="Taxon") + theme_bw() +
@@ -399,7 +399,7 @@ server <- function(input, output) {
         geom_bar(aes_string(x="jahr", y="`Number of occupied grid cells`",
                             fill="class_order"), stat="identity") + 
         scale_x_continuous(expand=expansion(add=c(0,0))) + 
-        scale_y_continuous(expand=expansion(add=c(0,1))) + 
+        scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
         scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="Jahr", y="Anzahl an besetzten Gridzellen", fill="Taxon") + theme_bw() + 
@@ -436,19 +436,23 @@ server <- function(input, output) {
           scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                        "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
           labs(x="", y="Artenvielfalt") + 
-          scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
+          scale_y_continuous(expand = expansion(mult = c(0, .05))) + theme_bw() + 
           theme(legend.position = "none")
       } else{
-        sub_dat1 <- sub_dat1 %>% arrange(desc(class_order))
-        sub_dat1$cumsum <- cumsum(sub_dat1$val)
-        p3 <- sub_dat1 %>% ggplot() + geom_bar(aes(x="", y=val, fill=class_order), stat="identity", width=1) + 
-          geom_text(aes(x="", y=cumsum-(val/2), label=val)) + 
-          scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
-                                       "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
-          labs(x="", y="Artenvielfalt") + coord_polar("y", start=0) + theme_classic() + 
-          theme(axis.text = element_blank(), axis.ticks = element_blank(),
-                axis.line = element_blank(), axis.title = element_blank(),
-                legend.position="none")
+        if(length(unique(sub_dat1$class_order)) == 1){
+          p3 <- plot_spacer()
+        } else{
+          sub_dat1 <- sub_dat1 %>% arrange(desc(class_order))
+          sub_dat1$cumsum <- cumsum(sub_dat1$val)
+          p3 <- sub_dat1 %>% ggplot() + geom_bar(aes(x="", y=val, fill=class_order), stat="identity", width=1) + 
+            geom_text(aes(x="", y=cumsum-(val/2), label=val)) + 
+            scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
+                                         "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+            labs(x="", y="Artenvielfalt") + coord_polar("y", start=0) + theme_classic() + 
+            theme(axis.text = element_blank(), axis.ticks = element_blank(),
+                  axis.line = element_blank(), axis.title = element_blank(),
+                  legend.position="none")
+        }
       }
     } else{
       sub_dat2 <- datadistrict() %>% tidyr::drop_na() %>% filter(var == "Number of occupied grid cells") %>% 
@@ -479,19 +483,10 @@ server <- function(input, output) {
           scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                        "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
           labs(x="", y="Anzahl an besetzten Gridzellen") + 
-          scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
+          scale_y_continuous(expand = expansion(mult = c(0, .05))) + theme_bw() + 
           theme(legend.position = "none")
-        } else{
-          sub_dat2 <- sub_dat2 %>% arrange(desc(class_order))
-          sub_dat2$cumsum <- cumsum(sub_dat2$val)
-          p3 <- sub_dat2 %>% ggplot() + geom_bar(aes(x="", y=val, fill=class_order), stat="identity", width=1) + 
-            geom_text(aes(x="", y=cumsum-(val/2), label=val)) + 
-            scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
-                                       "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
-          labs(x="", y="Anzahl an besetzten Gridzellen") + coord_polar("y", start=0) + 
-            theme_classic() + theme(axis.text = element_blank(), axis.ticks = element_blank(),
-                  axis.line = element_blank(), axis.title = element_blank(),
-                  legend.position="none")
+      } else{
+        p3 <- plot_spacer()
       }
     }
     p1 + p2 + p3
@@ -519,7 +514,7 @@ server <- function(input, output) {
       geom_bar(aes_string(x="jahr", y="`Number of records`",
                           fill="class_order"), stat="identity") + 
       scale_x_continuous(expand=expansion(add=c(0,0))) + 
-      scale_y_continuous(expand=expansion(add=c(0,5))) + 
+      scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
       scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                    "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
       labs(x="Jahr", y="Anzahl an Beobachtungen", fill="Taxon") + theme_bw() +
@@ -554,19 +549,23 @@ server <- function(input, output) {
         scale_fill_manual(values=c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                    "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="", y="Anzahl an Beobachtungen") + 
-        scale_y_continuous(expand=expansion(add=c(0,50))) + theme_bw() + 
+        scale_y_continuous(expand = expansion(mult = c(0, .05))) + theme_bw() + 
         theme(legend.position = "none")
+    } else{
+      if(length(unique(sub_dat3$class_order)) == 1){
+        p6 <- plot_spacer()
       } else{
         sub_dat3 <- sub_dat3 %>% arrange(desc(class_order))
         sub_dat3$cumsum <- cumsum(sub_dat3$val)
         p6 <- sub_dat3 %>% ggplot() + geom_bar(aes(x="", y=val, fill=class_order), stat="identity", width=1) + 
           geom_text(aes(x="", y=cumsum-(val/2), label=val)) + 
           scale_fill_manual(values=c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
-                                   "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
-        labs(x="", y="Anzahl an Beobachtungen") + coord_polar("y", start=0) + theme_classic() + 
+                                     "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+          labs(x="", y="Anzahl an Beobachtungen") + coord_polar("y", start=0) + theme_classic() + 
           theme(axis.text = element_blank(), axis.ticks = element_blank(),
                 axis.line = element_blank(), axis.title = element_blank(),
                 legend.position="none")
+      }
     }
     p4 + p5 + p6
   })
