@@ -79,15 +79,15 @@ ui <- fluidPage(
       uiOutput("cat_choice"),
       helpText("Arten sind anhand des gewählten Zeitraums, Monats und Taxons ausgewählt."),
       shinyWidgets::pickerInput(inputId = "district", 
-                  label = "Wähle einen oder mehrere Regierungsbezirk(e):", 
-                  choices = sort(na.omit(unique(art_data$district))),
-                  selected = sort(na.omit(unique(art_data$district))),
-                  options = list(
-                    `actions-box` = TRUE, 
-                    size = 10,
-                    `selected-text-format` = "count > 3",
-                    `count-selected-text` = "{0} Bezirke ausgewählt (von insgesamt {1})"
-                  ), multiple = TRUE),
+                                label = "Wähle einen oder mehrere Regierungsbezirk(e):", 
+                                choices = sort(na.omit(unique(art_data$district))),
+                                selected = sort(na.omit(unique(art_data$district))),
+                                options = list(
+                                  `actions-box` = TRUE, 
+                                  size = 10,
+                                  `selected-text-format` = "count > 3",
+                                  `count-selected-text` = "{0} Bezirke ausgewählt (von insgesamt {1})"
+                                ), multiple = TRUE),
       helpText("Achtung: Das Tool stellt nur die gesammelten Rohdaten dar. 
       Um die Daten räumlich oder zeitlich zu filtern, ändere die Mindestanzahl an Beobachtungen:"),
       numericInput(inputId = "sp_weight", label = "Mindestanzahl an Beobachtungen pro Gridzelle:", value = 1, min = 1, max = 50), 
@@ -414,7 +414,7 @@ server <- function(input, output){
           coord_straightpolar(theta = 'x') + 
           geom_text(data=df, aes(x=x, y=y, label=label), size=9/.pt, colour="black") +
           scale_colour_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
-                                       "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+                                         "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
           scale_y_continuous(expand=c(0,0), limits=c(0,NA), breaks=df$label) +
           theme_minimal() + theme(axis.text.y = element_blank(), 
                                   axis.ticks.y = element_blank(), legend.position="none",
@@ -425,18 +425,25 @@ server <- function(input, output){
                                                                     linetype="dashed"),
                                   panel.grid.major.y = element_line(colour= c(rep("gray60", nrow(df)), NA), linewidth=1/.pt,
                                                                     linetype="dashed"))
-      } else{
+      } else if(length(unique(sub_dat2$district)) == 2){
         p3 <- sub_dat1 %>% ggplot() + geom_bar(aes(x=district, y=val, fill=class_order), stat="identity") + 
           scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                        "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
           labs(x="", y="Species richness") + 
           scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
           theme(legend.position = "none")
+      } else{
+        p3 <- sub_dat1 %>% ggplot() + geom_bar(aes(x=district, y=val, fill=class_order), stat="identity") + 
+          scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
+                                       "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+          labs(x="", y="Species richness") + coord_polar() + 
+          scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
+          theme(legend.position = "none")
       }
     } else{
       sub_dat2 <- datadistrict() %>% tidyr::drop_na() %>% filter(var == "Number of occupied grid cells") %>% 
         dplyr::select(-c(var))
-      if( length(unique(sub_dat2$district)) >= 3){
+      if(length(unique(sub_dat2$district)) >= 3){
         df <- data.frame(x=rep(0, times=length(unique(sub_dat2$district))), 
                          y=round(seq(0,max(sub_dat2$val), length.out=length(unique(sub_dat2$district)))/10,0)*10,
                          label=round(seq(0,max(sub_dat2$val), length.out=length(unique(sub_dat2$district)))/10,0)*10)
@@ -446,7 +453,7 @@ server <- function(input, output){
           coord_straightpolar(theta = 'x') + 
           geom_text(data=df, aes(x=x, y=y, label=label), size=9/.pt, colour="black") +
           scale_colour_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
-                                       "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+                                         "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
           scale_y_continuous(expand=c(0,0), limits=c(0,NA), breaks=df$label) +
           theme_minimal() + theme(axis.text.y = element_blank(), 
                                   axis.ticks.y = element_blank(), legend.position="none",
@@ -457,11 +464,18 @@ server <- function(input, output){
                                                                     linetype="dashed"),
                                   panel.grid.major.y = element_line(colour= c(rep("gray60", nrow(df)), NA), linewidth=1/.pt,
                                                                     linetype="dashed"))
-      } else{
+      } else if(length(unique(sub_dat2$district)) == 2){
         p3 <- sub_dat2 %>% ggplot() + geom_bar(aes(x=district, y=val, fill=class_order), stat="identity") + 
           scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                        "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
           labs(x="", y="Number of occupied grid cells") + 
+          scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
+          theme(legend.position = "none")
+      } else{
+        p3 <- sub_dat2 %>% ggplot() + geom_bar(aes(x=district, y=val, fill=class_order), stat="identity") + 
+          scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
+                                       "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+          labs(x="", y="Number of occupied grid cells") + coord_polar() + 
           scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
           theme(legend.position = "none")
       }
@@ -584,8 +598,9 @@ server <- function(input, output){
     if(input$spec == "Alle Arten"){
       dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], 
                                                               input$year_weight[2], by=as.numeric(input$interval)))) %>% 
+        mutate(jahr2 = gsub("]", "", gsub("(", "", jahr2))) %>% 
         tidyr::drop_na() %>% ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                                                      ymax="YLO", fill="`Species richness`")) + 
+                                                             ymax="YLO", fill="`Species richness`")) + 
         facet_grid(.~jahr2) + 
         scico::scale_fill_scico(name="Artenvielfalt", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
