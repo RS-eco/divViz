@@ -78,15 +78,15 @@ ui <- fluidPage(
       uiOutput("cat_choice"),
       helpText("Arten sind anhand des gewählten Zeitraums, Monats und Taxons ausgewählt."),
       shinyWidgets::pickerInput(inputId = "district", 
-                  label = "Wähle einen oder mehrere Regierungsbezirk(e):", 
-                  choices = sort(na.omit(unique(art_data$district))),
-                  selected = sort(na.omit(unique(art_data$district))),
-                  options = list(
-                    `actions-box` = TRUE, 
-                    size = 10,
-                    `selected-text-format` = "count > 3",
-                    `count-selected-text` = "{0} Bezirke ausgewählt (von insgesamt {1})"
-                  ), multiple = TRUE),
+                                label = "Wähle einen oder mehrere Regierungsbezirk(e):", 
+                                choices = sort(na.omit(unique(art_data$district))),
+                                selected = sort(na.omit(unique(art_data$district))),
+                                options = list(
+                                  `actions-box` = TRUE, 
+                                  size = 10,
+                                  `selected-text-format` = "count > 3",
+                                  `count-selected-text` = "{0} Bezirke ausgewählt (von insgesamt {1})"
+                                ), multiple = TRUE),
       helpText("Achtung: Das Tool stellt nur die gesammelten Rohdaten dar. 
       Um die Daten räumlich oder zeitlich zu filtern, ändere die Mindestanzahl an Beobachtungen:"),
       numericInput(inputId = "sp_weight", label = "Mindestanzahl an Beobachtungen pro Gridzelle:", value = 1, min = 1, max = 50), 
@@ -159,7 +159,7 @@ server <- function(input, output) {
   
   datyearmon <- reactive({
     datclassorder() %>% filter(jahr >= input$year_weight[1],
-                        jahr <= input$year_weight[2]) %>%
+                               jahr <= input$year_weight[2]) %>%
       filter(mon >= input$month_weight[1],
              mon <= input$month_weight[2]) 
   })
@@ -213,17 +213,32 @@ server <- function(input, output) {
   })
   
   dataset <- reactive({
-    if(input$res == "TK25"){
-      dataspec() %>% group_by(XLU, XRU, YLU, YLO, karte) %>% 
-        summarise(`Species richness`=n_distinct(art2), 
-                  `Number of records`=n()) %>% 
-        filter(`Number of records` >= input$sp_weight)
-    } else {
-      dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte) %>% 
-        summarise(`Species richness`=n_distinct(art2), 
-                  `Number of records`=n()) %>% 
-        rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
-        filter(`Number of records` >= input$sp_weight)
+    if(input$spec != "Alle Arten"){
+      if(input$res == "TK25"){
+        dataspec() %>% group_by(XLU, XRU, YLU, YLO, karte, class_order) %>% 
+          summarise(`Species richness`=n_distinct(art2, na.rm=T), 
+                    `Number of records`=n()) %>% 
+          filter(`Number of records` >= input$sp_weight)
+      } else {
+        dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order) %>% 
+          summarise(`Species richness`=n_distinct(art2, na.rm=T), 
+                    `Number of records`=n()) %>% 
+          rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
+          filter(`Number of records` >= input$sp_weight)
+      }
+    } else{
+      if(input$res == "TK25"){
+        dataspec() %>% group_by(XLU, XRU, YLU, YLO, karte) %>% 
+          summarise(`Species richness`=n_distinct(art2, na.rm=T), 
+                    `Number of records`=n()) %>% 
+          filter(`Number of records` >= input$sp_weight)
+      } else {
+        dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte) %>% 
+          summarise(`Species richness`=n_distinct(art2, na.rm=T), 
+                    `Number of records`=n()) %>% 
+          rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
+          filter(`Number of records` >= input$sp_weight)
+      }
     }
   })
   
@@ -488,7 +503,7 @@ server <- function(input, output) {
       p <- dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], 
                                                                    input$year_weight[2], by=as.numeric(input$interval)))) %>% 
         tidyr::drop_na() %>% ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                                                      ymax="YLO", fill="`Species richness`")) + 
+                                                             ymax="YLO", fill="`Species richness`")) + 
         facet_grid(.~jahr2) + 
         scico::scale_fill_scico(name="Artenvielfalt", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
