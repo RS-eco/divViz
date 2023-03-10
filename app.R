@@ -375,7 +375,7 @@ server <- function(input, output) {
         geom_bar(aes_string(x="jahr", y="`Species richness`",
                             fill="class_order"), stat="identity") + 
         scale_x_continuous(expand=expansion(add=c(0,0))) + 
-        scale_y_continuous(expand=expansion(add=c(0,1))) + 
+        scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
         scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="Jahr", fill="Taxon") + theme_bw() +
@@ -387,7 +387,7 @@ server <- function(input, output) {
         geom_bar(aes_string(x="jahr", y="`Number of occupied grid cells`",
                             fill="class_order"), stat="identity") + 
         scale_x_continuous(expand=expansion(add=c(0,0))) + 
-        scale_y_continuous(expand=expansion(add=c(0,1))) + 
+        scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
         scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="Jahr", y="Anzahl an besetzten Gridzellen", fill="Taxon") + theme_bw() + 
@@ -401,7 +401,7 @@ server <- function(input, output) {
         scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="", y="Species richness") + 
-        scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
+        scale_y_continuous(expand=expansion(mult = c(0, .05))) + theme_bw() + 
         theme(legend.position = "none", axis.text.x = element_text(angle=45))
     } else{
       sub_dat2 <- datadistrict() %>% tidyr::drop_na() %>% filter(var == "Number of occupied grid cells") %>% 
@@ -410,7 +410,7 @@ server <- function(input, output) {
         scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="", y="Anzahl an besetzten Gridzellen") + 
-        scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
+        scale_y_continuous(expand=expansion(mult = c(0, .05))) + theme_bw() + 
         theme(legend.position = "none", axis.text.x = element_text(angle=45))
     }
     plotly::subplot(plotly::ggplotly(p1), plotly::ggplotly(p2), plotly::ggplotly(p3), nrows = 1) %>%
@@ -436,7 +436,7 @@ server <- function(input, output) {
       geom_bar(aes_string(x="jahr", y="`Number of records`",
                           fill="class_order"), stat="identity") + 
       scale_x_continuous(expand=expansion(add=c(0,0))) + 
-      scale_y_continuous(expand=expansion(add=c(0,5))) + 
+      scale_y_continuous(expand=expansion(mult = c(0, .05))) + 
       scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                    "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
       labs(x="Jahr", y="Anzahl an Beobachtungen", fill="Taxon") + theme_bw() +
@@ -449,7 +449,7 @@ server <- function(input, output) {
       scale_fill_manual(values=c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                  "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
       labs(x="", y="Anzahl an Beobachtungen") + 
-      scale_y_continuous(expand=expansion(add=c(0,50))) + theme_bw() + 
+      scale_y_continuous(expand = expansion(mult = c(0, .05))) + theme_bw() + 
       theme(legend.position = "none", axis.text.x = element_text(angle=45))
     plotly::subplot(plotly::ggplotly(p4), plotly::ggplotly(p5), plotly::ggplotly(p6), nrows = 1) %>%
       layout(xaxis = list(zerolinecolor = '#ffff', zerolinewidth = 2, gridcolor = 'ffff'), 
