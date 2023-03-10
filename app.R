@@ -79,15 +79,15 @@ ui <- fluidPage(
       uiOutput("cat_choice"),
       helpText("Arten sind anhand des gewählten Zeitraums, Monats und Taxons ausgewählt."),
       shinyWidgets::pickerInput(inputId = "district", 
-                  label = "Wähle einen oder mehrere Regierungsbezirk(e):", 
-                  choices = sort(na.omit(unique(art_data$district))),
-                  selected = sort(na.omit(unique(art_data$district))),
-                  options = list(
-                    `actions-box` = TRUE, 
-                    size = 10,
-                    `selected-text-format` = "count > 3",
-                    `count-selected-text` = "{0} Bezirke ausgewählt (von insgesamt {1})"
-                  ), multiple = TRUE),
+                                label = "Wähle einen oder mehrere Regierungsbezirk(e):", 
+                                choices = sort(na.omit(unique(art_data$district))),
+                                selected = sort(na.omit(unique(art_data$district))),
+                                options = list(
+                                  `actions-box` = TRUE, 
+                                  size = 10,
+                                  `selected-text-format` = "count > 3",
+                                  `count-selected-text` = "{0} Bezirke ausgewählt (von insgesamt {1})"
+                                ), multiple = TRUE),
       helpText("Achtung: Das Tool stellt nur die gesammelten Rohdaten dar. 
       Um die Daten räumlich oder zeitlich zu filtern, ändere die Mindestanzahl an Beobachtungen:"),
       numericInput(inputId = "sp_weight", label = "Mindestanzahl an Beobachtungen pro Gridzelle:", value = 1, min = 1, max = 50), 
@@ -208,7 +208,7 @@ server <- function(input, output) {
   })
   
   dataspec <- reactive({
-   if(input$spec != "Alle Arten"){
+    if(input$spec != "Alle Arten"){
       datclassdist() %>% filter(art2 == input$spec)
     } else{
       datclassdist()
@@ -263,7 +263,7 @@ server <- function(input, output) {
   })
   
   datatime <- reactive({
-   if(input$res == "TK25"){
+    if(input$res == "TK25"){
       dataspec() %>% group_by(jahr, class_order) %>% 
         summarise(`Species richness`= n_distinct(art2), 
                   `Number of records`= n(),
@@ -431,13 +431,23 @@ server <- function(input, output) {
                                                                     linetype="dashed"),
                                   panel.grid.major.y = element_line(colour= c(rep("gray60", nrow(df)), NA), linewidth=1/.pt,
                                                                     linetype="dashed"))
-      } else{
+      } else if(length(unique(sub_dat1$district)) == 2){
         p3 <- sub_dat1 %>% ggplot() + geom_bar(aes(x=district, y=val, fill=class_order), stat="identity") + 
           scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                        "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
           labs(x="", y="Artenvielfalt") + 
           scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
           theme(legend.position = "none")
+      } else{
+        sub_dat1 <- sub_dat1 %>% arrange(desc(class_order))
+        sub_dat1$cumsum <- cumsum(sub_dat1$val)
+        p3 <- sub_dat1 %>% ggplot() + geom_bar(aes(x="", y=val, fill=class_order), stat="identity", width=1) + 
+          geom_text(aes(x="", y=cumsum-(val/2), label=val)) + 
+          scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
+                                       "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+          labs(x="", y="Artenvielfalt") + coord_polar("y", start=0) + theme_classic() + 
+          theme(axis.text = element_blank(), axis.ticks = element_blank(),
+                axis.line = element_blank(), axis.title = element_blank())
       }
     } else{
       sub_dat2 <- datadistrict() %>% tidyr::drop_na() %>% filter(var == "Number of occupied grid cells") %>% 
@@ -463,13 +473,23 @@ server <- function(input, output) {
                                                                     linetype="dashed"),
                                   panel.grid.major.y = element_line(colour= c(rep("gray60", nrow(df)), NA), linewidth=1/.pt,
                                                                     linetype="dashed"))
-      } else{
+      } else if(length(unique(sub_dat2$district)) == 2){
         p3 <- sub_dat2 %>% ggplot() + geom_bar(aes(x=district, y=val, fill=class_order), stat="identity") + 
           scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                        "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
           labs(x="", y="Anzahl an besetzten Gridzellen") + 
           scale_y_continuous(expand=expansion(add=c(0,3))) + theme_bw() + 
           theme(legend.position = "none")
+        } else{
+          sub_dat2 <- sub_dat2 %>% arrange(desc(class_order))
+          sub_dat2$cumsum <- cumsum(sub_dat2$val)
+          p3 <- sub_dat2 %>% ggplot() + geom_bar(aes(x="", y=val, fill=class_order), stat="identity", width=1) + 
+            geom_text(aes(x="", y=cumsum-(val/2), label=val)) + 
+            scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
+                                       "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+          labs(x="", y="Anzahl an besetzten Gridzellen") + coord_polar("y", start=0) + 
+            theme_classic() + theme(axis.text = element_blank(), axis.ticks = element_blank(),
+                  axis.line = element_blank(), axis.title = element_blank())
       }
     }
     p1 + p2 + p3
@@ -527,65 +547,76 @@ server <- function(input, output) {
                                                                   linetype="dashed"),
                                 panel.grid.major.y = element_line(colour= c(rep("gray60", nrow(df)), NA), linewidth=1/.pt,
                                                                   linetype="dashed"))
-    } else{
+    } else if(length(unique(sub_dat3$district)) == 2){
       p6 <- sub_dat3 %>% ggplot() + geom_bar(aes(x=district, y=val, fill=class_order), stat="identity") + 
         scale_fill_manual(values=c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                    "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="", y="Anzahl an Beobachtungen") + 
         scale_y_continuous(expand=expansion(add=c(0,50))) + theme_bw() + 
         theme(legend.position = "none")
+      } else{
+        sub_dat3 <- sub_dat3 %>% arrange(desc(class_order))
+        sub_dat3$cumsum <- cumsum(sub_dat3$val)
+        p6 <- sub_dat3 %>% ggplot() + geom_bar(aes(x="", y=val, fill=class_order), stat="identity", width=1) + 
+          geom_text(aes(x="", y=cumsum-(val/2), label=val)) + 
+          scale_fill_manual(values=c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
+                                   "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+        labs(x="", y="Anzahl an Beobachtungen") + coord_polar("y", start=0) + theme_classic() + 
+          theme(axis.text = element_blank(), axis.ticks = element_blank(),
+                axis.line = element_blank(), axis.title = element_blank())
     }
     p4 + p5 + p6
   })
   
   output$plot7 <- renderPlot({
     ggplot(data=datagroup()) + 
-        geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                             ymax="YLO", fill="`Species richness`")) + 
-        facet_grid(.~class_order) + 
-        scico::scale_fill_scico(name="Artenvielfalt", palette="roma", na.value= "grey50", direction=-1) + 
-        geom_sf(data=shape(), fill="transparent", col="black") +
-        labs(x="Breitengrad", y="Längengrad") + 
-        coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                          max(st_coordinates(shape())[,'X'])),
-                 ylim = c(min(st_coordinates(shape())[,'Y']),
-                          max(st_coordinates(shape())[,'Y']))) + 
-        ggspatial::annotation_scale(location="br", width_hint = 0.15) +
-        ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
-                                          height = unit(1, "cm"), width = unit(1, "cm"),
-                                          style = ggspatial::north_arrow_fancy_orienteering) +
-        theme_bw() + theme(strip.background = element_blank(), legend.key.height=unit(0.5, "in"),
-                           legend.title=element_text(size=12, face="bold"), 
-                           strip.text=element_text(size=12, face="bold"))
+      geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
+                           ymax="YLO", fill="`Species richness`")) + 
+      facet_grid(.~class_order) + 
+      scico::scale_fill_scico(name="Artenvielfalt", palette="roma", na.value= "grey50", direction=-1) + 
+      geom_sf(data=shape(), fill="transparent", col="black") +
+      labs(x="Breitengrad", y="Längengrad") + 
+      coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
+                        max(st_coordinates(shape())[,'X'])),
+               ylim = c(min(st_coordinates(shape())[,'Y']),
+                        max(st_coordinates(shape())[,'Y']))) + 
+      ggspatial::annotation_scale(location="br", width_hint = 0.15) +
+      ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
+                                        height = unit(1, "cm"), width = unit(1, "cm"),
+                                        style = ggspatial::north_arrow_fancy_orienteering) +
+      theme_bw() + theme(strip.background = element_blank(), legend.key.height=unit(0.5, "in"),
+                         legend.title=element_text(size=12, face="bold"), 
+                         strip.text=element_text(size=12, face="bold"))
   })
   
   output$plot8 <- renderPlot({
     ggplot(data=datagroup()) + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                                                      ymax="YLO", fill="`Number of records`")) + 
-        facet_grid(.~class_order) + 
-        scico::scale_fill_scico(name="Anzahl an\nBeobachtungen", palette="roma", 
-                                na.value= "grey50", direction=-1) + 
-        geom_sf(data=shape(), fill="transparent", col="black") +
-        labs(x="Breitengrad", y="Längengrad") + 
-        coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                          max(st_coordinates(shape())[,'X'])),
-                 ylim = c(min(st_coordinates(shape())[,'Y']),
-                          max(st_coordinates(shape())[,'Y']))) + 
-        ggspatial::annotation_scale(location="br", width_hint = 0.2) +
-        ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
-                                          height = unit(1, "cm"), width = unit(1, "cm"),
-                                          style = ggspatial::north_arrow_fancy_orienteering) +
-        theme_bw() + theme(strip.background = element_blank(), legend.key.height=unit(0.5, "in"),
-                           legend.title=element_text(size=12, face="bold"), 
-                           strip.text=element_text(size=12, face="bold"))
+                                                    ymax="YLO", fill="`Number of records`")) + 
+      facet_grid(.~class_order) + 
+      scico::scale_fill_scico(name="Anzahl an\nBeobachtungen", palette="roma", 
+                              na.value= "grey50", direction=-1) + 
+      geom_sf(data=shape(), fill="transparent", col="black") +
+      labs(x="Breitengrad", y="Längengrad") + 
+      coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
+                        max(st_coordinates(shape())[,'X'])),
+               ylim = c(min(st_coordinates(shape())[,'Y']),
+                        max(st_coordinates(shape())[,'Y']))) + 
+      ggspatial::annotation_scale(location="br", width_hint = 0.2) +
+      ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
+                                        height = unit(1, "cm"), width = unit(1, "cm"),
+                                        style = ggspatial::north_arrow_fancy_orienteering) +
+      theme_bw() + theme(strip.background = element_blank(), legend.key.height=unit(0.5, "in"),
+                         legend.title=element_text(size=12, face="bold"), 
+                         strip.text=element_text(size=12, face="bold"))
   })
   
   output$plot9 <- renderPlot({
     if(input$spec == "Alle Arten"){
       dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], 
                                                               input$year_weight[2], by=as.numeric(input$interval)))) %>% 
+        mutate(jahr2 = gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", jahr2)))) %>%
         tidyr::drop_na() %>% ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                                                      ymax="YLO", fill="`Species richness`")) + 
+                                                             ymax="YLO", fill="`Species richness`")) + 
         facet_grid(.~jahr2) + 
         scico::scale_fill_scico(name="Artenvielfalt", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
@@ -604,10 +635,11 @@ server <- function(input, output) {
     } else {
       dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], 
                                                               by=as.numeric(input$interval)))) %>% 
+        mutate(jahr2 = gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", jahr2)))) %>%
         tidyr::drop_na() %>% ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="class_order")) + 
         facet_grid(.~jahr2) + geom_sf(data=shape(), fill="transparent", col="black") +
         scale_fill_manual(values=c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
-                                     "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+                                   "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="Breitengrad", y="Längengrad") + 
         coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
                           max(st_coordinates(shape())[,'X'])),
@@ -624,7 +656,8 @@ server <- function(input, output) {
   
   output$plot10 <- renderPlot({
     dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], 
-                                                            by=as.numeric(input$interval)))) %>% tidyr::drop_na() %>% 
+                                                            by=as.numeric(input$interval)))) %>% 
+      mutate(jahr2 = gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", jahr2)))) %>% tidyr::drop_na() %>% 
       ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="`Number of records`")) + 
       facet_grid(.~jahr2) + geom_sf(data=shape(), fill="transparent", col="black") +
       scico::scale_fill_scico(name="Anzahl an\nBeobachtungen", palette="roma", 
@@ -647,7 +680,7 @@ server <- function(input, output) {
     dataspeccomp() %>% ggplot() + 
       geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="class_order")) +  facet_grid(.~art2) + 
       scale_fill_manual(values=c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
-                                   "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
+                                 "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Breitengrad", y="Längengrad") + 
       coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
