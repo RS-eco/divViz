@@ -59,7 +59,7 @@ art_data$class_order <- "Aves"
 art_data$class_order[art_data$class == "Insecta"] <- art_data$order[art_data$class == "Insecta"]
 
 art_data <- art_data %>% dplyr::select(XLU, YLU, XRU, YLO, XLU_rough, XRU_rough, YLU_rough, YLO_rough, 
-                                       jahr, mon, karte, quadrant, district, class_order, family, art) %>%
+                                       jahr, mon, karte, quadrant, district, class_order, family, art, sta) %>%
   mutate(class_order = factor(class_order, levels=c("Aves", "Lepidoptera", "Odonata", "Orthoptera"), 
                               labels=c("Vögel", "Schmetterlinge", "Libellen", "Heuschrecken"))); invisible(gc())
 

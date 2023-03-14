@@ -33,6 +33,15 @@ landkreise <- sf::st_transform(landkreise, 31468)
 
 art_data <- readRDS("inst/extdata/art_data.rds")
 
+# Change absence/presence information
+art_data$sta <- factor(art_data$sta, exclude=NULL)
+art_data$sta <- forcats::fct_collapse(art_data$sta,
+                      "absence"=c("XX","YY"),
+                      "presence"=c("A", "B", "C", "EG", "I", NA, "NB", 
+                                   "OA", "RA", "SB", "UB", "W", "WB", "Z"))
+# Only use presence data
+art_data <- art_data %>% filter(sta == "presence")
+
 taxa <- c("Vögel", "Schmetterlinge", "Libellen", "Heuschrecken")
 
 CSS <- "
@@ -216,7 +225,8 @@ server <- function(input, output){
                     `Number of records`=n()) %>% 
           filter(`Number of records` >= input$sp_weight)
       } else {
-        dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order) %>% 
+        dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, 
+                                karte, class_order) %>% 
           summarise(`Species richness`=n_distinct(art, na.rm=T), 
                     `Number of records`=n()) %>% 
           rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
@@ -229,7 +239,8 @@ server <- function(input, output){
                     `Number of records`=n()) %>% 
           filter(`Number of records` >= input$sp_weight)
       } else {
-        dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte) %>% 
+        dataspec() %>% 
+          group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte) %>% 
           summarise(`Species richness`=n_distinct(art, na.rm=T), 
                     `Number of records`=n()) %>% 
           rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%

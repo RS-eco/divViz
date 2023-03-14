@@ -21,9 +21,8 @@ install.packages(c("data.table", "dplyr", "dbplyr", "tidyr", "DBI", "RSQLite"))
 Diese zusätzlichen packages werden dann für das Visualisierungs-Tool selbst benötigt:
 
 ```{r, eval=F}
-install.packages(c("shiny", "shinyWidgets", "DT", 
-                   "ggplot2", "patchwork", "ggspatial", "scico", 
-                   "sf"))
+install.packages(c("shiny", "shinyWidgets", "DT", "ggplot2", "sf",
+                   "forcats", "patchwork", "ggspatial", "scico"))
 ```
 
 ## Download des Visualisierungs-Tool
