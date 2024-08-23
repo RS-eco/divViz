@@ -595,7 +595,7 @@ server <- function(input, output) {
   output$table1 <- DT::renderDataTable(
     dataset() %>% ungroup() %>%
       dplyr::select(karte, `Species richness`, `Number of records`) %>%
-      rename(TK25 = karte),
+      rename(TK25 = karte, Artenvielfalt = `Species richness`, `Anzahl an Beobachtungen`= `Number of records`),
     options = list(
       lengthMenu = list(c(18, 50, 100, -1), c('18', '50', '100', 'All')),
       pageLength = 18
@@ -604,7 +604,8 @@ server <- function(input, output) {
   output$table2 <- DT::renderDataTable(
     datatime() %>% dplyr::select(class_order, jahr, `Species richness`, 
                                  `Number of records`, `Number of occupied grid cells`) %>%
-      rename(Taxon = class_order, Year = jahr),
+      rename(Taxon = class_order, Jahr = jahr, Artenvielfalt = `Species richness`,
+             `Anzahl an Beobachtungen` = `Number of records`, `Anzahl an besetzten Gridzellen`= `Number of occupied grid cells`),
     options = list(
       lengthMenu = list(c(18, 50, 100, -1), c('18', '50', '100', 'All')),
       pageLength = 18
