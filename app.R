@@ -701,7 +701,7 @@ server <- function(input, output) {
                          strip.text=element_text(size=12, face="bold"))
   })
   
-  output$table1 <- DT::renderDataTable(dataset()[, c(karte, `Species richness`, `Number of records`)],
+  output$table1 <- DT::renderDataTable(dataset() %>% .[, c("karte", "Species richness", "Number of records")],
                                        #setnames(dat1, karte, TK25),
                                        options = list(
                                          lengthMenu = list(c(18, 50, 100, -1), c('18', '50', '100', 'All')),
@@ -709,8 +709,8 @@ server <- function(input, output) {
                                        ))
   
   output$table2 <- DT::renderDataTable(
-    datatime()[,c(class_order, jahr, `Species richness`, 
-                  `Number of records`, `Number of occupied grid cells`)],
+    datatime() %>% .[,c("class_order", "jahr", "Species richness", 
+                  "Number of records", "Number of occupied grid cells")],
     #setnames(dat2, c(class_order, jahr), c(Taxon, Year))
     options = list(
       lengthMenu = list(c(18, 50, 100, -1), c('18', '50', '100', 'All')),

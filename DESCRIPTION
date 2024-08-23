@@ -1,21 +1,20 @@
 Package: divViz
 Type: Package
 Title: Visualisation tool for biodiversity data
-Version: 0.0.1
-Date: 2023-02-10
+Version: 0.0.2
+Date: 2024-08-23
 Authors@R: 
     person("RS-eco", email = "RS-eco@posteo.de", role = c("cre", "aut"))
 Maintainer: RS-eco <rs-eco@posteo.de>
 Description: R package for Shiny visualisation tool of biodiversity data.
-Imports: shiny, shinyWidgets, DT, ggplot2, data.table, sf, dplyr, patchwork, ggspatial, scico
-Depends: R (>= 4.0)
+Depends: R (>= 4.3)
 Suggests: knitr, rmarkdown
 License: file LICENSE
 LazyData: TRUE
 LazyDataCompression: xz
 Encoding: UTF-8
 VignetteBuilder: knitr
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 NeedsCompilation: no
 Author: RS-eco [cre, aut]
 URL: https://github.com/RS-eco/divViz
