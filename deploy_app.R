@@ -2,7 +2,7 @@
 #install.packages('rsconnect')
 
 # Set the account info from secret variables
-#rsconnect::setAccountInfo(name='rs-eco', token='...', secret='...')
+rsconnect::setAccountInfo(name='rs-eco', token='73966D252CAB8CE04D582EDCAEF789AE', secret='...') # Secret is available from shinyapps.io after Login
 
 # Deploy the app
 library(rsconnect)

@@ -1,14 +1,17 @@
 rm(list=ls()); invisible(gc())
 
 # Load packages ----
+library(shiny)
 library(data.table)
 library(ggplot2)
 library(patchwork)
+library(bslib)
 library(shinyWidgets)
 #library(sf)
 library(dplyr) # Needed for sf filtering & piping!!!
 #library(ggspatial)
 #library(scico)
+library(DT)
 
 load("data/districts.rda")
 districts <- sf::st_transform(districts, 31468)
@@ -52,101 +55,237 @@ CSS <- "
 .pretty input[value=Orthoptera]~.state label:before, 
 "
 
-# User interface ----
-ui <- fluidPage(
-  tags$head(tags$style(HTML(CSS))),
-  ## This is the overall title
-  titlePanel("Visualisation tool for biodiversity data"),
+ui <- page_sidebar(
   
-  ## Menu on the side
-  sidebarLayout(
-    sidebarPanel(
-      sliderInput(inputId = "year_weight", label = "Time period:", value = c(1980, 2019),
-                  min = 1980, max = 2019, step = 1, ticks=F, sep=""),
-      sliderInput(inputId = "month_weight", label = "Months:", value = c(1, 12),
-                  min = 1, max = 12, step = 1, ticks=F, sep=""),
-      shinyWidgets::prettyCheckboxGroup(inputId = "class_order",
-                                        label = "Choose one or multiple taxa to display:",
-                                        choiceNames = taxa, choiceValues = taxa, 
-                                        selected = taxa, icon = icon("check"), fill=T, inline=T),
-      uiOutput("family_choice"),
-      uiOutput("cat_choice"),
-      helpText("Species are filtered according to time period, month and taxon."),
-      shinyWidgets::pickerInput(inputId = "district", 
-                                label = "Choose one or multiple districts to display:", 
-                                choices = sort(unique(districts$BEZ_RBZ)),
-                                selected = sort(unique(districts$BEZ_RBZ)),
-                                options = list(
-                                  `actions-box` = TRUE, 
-                                  size = 10,
-                                  `selected-text-format` = "count > 3",
-                                  `count-selected-text` = "{0} districts chosen (of a total of {1})"
-                                ), multiple = TRUE),
-      helpText("Note: This tool only displays the collected raw data. 
-             To apply a spatial or temporal filtering change the appropriate minimum number of values below."),
-      numericInput(inputId = "sp_weight", label = "Minimum number of records per grid cell:", value = 1, min = 1, max = 50), 
-      numericInput(inputId = "temp_weight", label = "Minimum number of records per year:", value = 1, min = 1, max = 1000), 
-      shinyWidgets::prettyRadioButtons(inputId = "res",
-                                       label = "Specify spatial resolution:",
-                                       choices = c("TK25", "TK"),
-                                       selected = "TK25", thick=T, animation = "pulse",
-                                       status = "info", inline = T),
-      helpText("TK25 corresponds to a resolution of ca. 6 x 6 km, while TK corresponds to a resolution of ca. 12 x 12 km. 
-               Maps are shown in 3-degree Gauss-Kruger zone 4 projection (EPSG:31468)."),
-      width = 3),
-    # Set the different tabs in the main panel
-    mainPanel(
-      tabsetPanel(type = "tabs",
-                  tabPanel("Species overview",
-                           h3("Species overview"),
-                           h4(textOutput("subtitle1")),
-                           plotOutput("plot123", height = 375, width = 1200),  
-                           h4("Number of observations"),
-                           plotOutput("plot456", height = 375, width = 1200)
-                  ),
-                  tabPanel("Taxon comparison",
-                           h3("Taxon comparison"),
-                           h4("Species richness"),
-                           plotOutput("plot7", height = 375, width = 1250),
-                           h4("Number of observations"),
-                           plotOutput("plot8", height = 375, width = 1290)
-                  ),
-                  tabPanel("Temporal comparison",
-                           h3("Temporal comparison"),
-                           selectInput("interval", "Specify a time interval:",
-                                       c("7 years" = 7,
-                                         "10 years" = 10,
-                                         "15 years" = 15)),
-                           h4(textOutput("subtitle2")),
-                           plotOutput("plot9", height = 325, width = 1295),
-                           h4("Number of observations"),
-                           plotOutput("plot10", height = 325, width = 1330)
-                  ),
-                  tabPanel("Species comparison",
-                           h3("Species comparison"),
-                           fluidRow(
-                             column(1),
-                             column(3, uiOutput("cat_choice2")),
-                             column(3, uiOutput("cat_choice3")),
-                             column(5)
-                           ),
-                           h4("Species presence"),
-                           plotOutput("plot11", height = 325, width = 640),
-                           h4("Number of observations"),
-                           plotOutput("plot12", height = 325, width = 730)
-                  ),
-                  tabPanel("Spatial summary",
-                           h3("Spatial summary"),
-                           DT::dataTableOutput("table1")
-                  ),
-                  tabPanel("Temporal summary",
-                           h3("Temporal summary"),
-                           DT::dataTableOutput("table2")
-                  )
-      ), width=7
+  theme = bs_theme(
+    version = 5,
+    bootswatch = "flatly"
+    # or "minty", "cosmo", "sandstone", etc.
+  ),
+  
+  title = "Visualisation tool for biodiversity data",
+  
+  tags$head(
+    tags$style(HTML(CSS))
+  ),
+  
+  sidebar = sidebar(
+    
+    sliderInput(
+      "year_weight",
+      "Time period:",
+      min = 1980,
+      max = 2019,
+      value = c(1980, 2019),
+      step = 1,
+      ticks = FALSE,
+      sep = ""
+    ),
+    
+    sliderInput(
+      "month_weight",
+      "Months:",
+      min = 1,
+      max = 12,
+      value = c(1, 12),
+      step = 1,
+      ticks = FALSE,
+      sep = ""
+    ),
+    
+    prettyCheckboxGroup(
+      inputId = "class_order",
+      label = "Choose one or multiple taxa to display:",
+      choiceNames = taxa,
+      choiceValues = taxa,
+      selected = taxa,
+      icon = icon("check"),
+      fill = TRUE,
+      inline = TRUE
+    ),
+    
+    uiOutput("family_choice"),
+    
+    uiOutput("cat_choice"),
+    
+    helpText(
+      "Species are filtered according to time period, month and taxon."
+    ),
+    
+    pickerInput(
+      inputId = "district",
+      label = "Choose one or multiple districts to display:",
+      choices = sort(unique(districts$BEZ_RBZ)),
+      selected = sort(unique(districts$BEZ_RBZ)),
+      multiple = TRUE,
+      options = list(
+        `actions-box` = TRUE,
+        size = 10,
+        `selected-text-format` = "count > 3",
+        `count-selected-text` =
+          "{0} districts chosen (of a total of {1})"
+      )
+    ),
+    
+    helpText(
+      "Note: This tool only displays the collected raw data.
+      To apply a spatial or temporal filtering change the
+      appropriate minimum number of values below."
+    ),
+    
+    numericInput(
+      "sp_weight",
+      "Minimum number of records per grid cell:",
+      value = 1,
+      min = 1,
+      max = 50
+    ),
+    
+    numericInput(
+      "temp_weight",
+      "Minimum number of records per year:",
+      value = 1,
+      min = 1,
+      max = 1000
+    ),
+    
+    prettyRadioButtons(
+      inputId = "res",
+      label = "Specify spatial resolution:",
+      choices = c("TK25", "TK"),
+      selected = "TK25",
+      thick = TRUE,
+      animation = "pulse",
+      status = "info",
+      inline = TRUE
+    ),
+    
+    helpText(
+      "TK25 corresponds to a resolution of ca. 6 × 6 km,
+      while TK corresponds to ca. 12 × 12 km.
+      Maps are shown in 3-degree Gauss-Kruger zone 4
+      projection (EPSG:31468)."
+    ),
+    
+    width = 350
+  ),
+  
+  navset_tab(
+    
+    nav_panel(
+      "Species overview",
+      
+      card(
+        card_header("Species overview"),
+        
+        h4(textOutput("subtitle1")),
+        
+        plotOutput("plot123", height = 375),
+        
+        hr(),
+        
+        h4("Number of observations"),
+        
+        plotOutput("plot456", height = 375)
+      )
+    ),
+    
+    nav_panel(
+      "Taxon comparison",
+      
+      card(
+        card_header("Taxon comparison"),
+        
+        h4("Species richness"),
+        
+        plotOutput("plot7", height = 375),
+        
+        hr(),
+        
+        h4("Number of observations"),
+        
+        plotOutput("plot8", height = 375)
+      )
+    ),
+    
+    nav_panel(
+      "Temporal comparison",
+      
+      card(
+        card_header("Temporal comparison"),
+        
+        selectInput(
+          "interval",
+          "Specify a time interval:",
+          choices = c(
+            "7 years" = 7,
+            "10 years" = 10,
+            "15 years" = 15
+          )
+        ),
+        
+        h4(textOutput("subtitle2")),
+        
+        plotOutput("plot9", height = 325),
+        
+        hr(),
+        
+        h4("Number of observations"),
+        
+        plotOutput("plot10", height = 325)
+      )
+    ),
+    
+    nav_panel(
+      "Species comparison",
+      
+      card(
+        card_header("Species comparison"),
+        
+        layout_columns(
+          col_widths = c(3, 3, 6),
+          
+          uiOutput("cat_choice2"),
+          
+          uiOutput("cat_choice3"),
+          
+          div()
+        ),
+        
+        h4("Species presence"),
+        
+        plotOutput("plot11", height = 325),
+        
+        hr(),
+        
+        h4("Number of observations"),
+        
+        plotOutput("plot12", height = 325)
+      )
+    ),
+    
+    nav_panel(
+      "Spatial summary",
+      
+      card(
+        card_header("Spatial summary"),
+        
+        DTOutput("table1")
+      )
+    ),
+    
+    nav_panel(
+      "Temporal summary",
+      
+      card(
+        card_header("Temporal summary"),
+        
+        DTOutput("table2")
+      )
     )
   )
 )
+
 
 # Server logic ----
 server <- function(input, output) {
@@ -291,9 +430,9 @@ server <- function(input, output) {
                      by = .(XLU, XRU, YLU, YLO, class_order)
       ][`Number of records` >= input$sp_weight,]
     } else {
-      dat <- datclass_dist()[,list(`Species richness`=length(unique(art2)), 
-                                   `Number of records`=.N), 
-                             by = .(jahr, XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order)
+      dat <- datclassdist()[,list(`Species richness`=length(unique(art2)), 
+                                  `Number of records`=.N), 
+                            by = .(jahr, XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order)
       ][`Number of records` >= input$sp_weight,]
       setnames(dat, old = c("XLU_rough", "XRU_rough", "YLU_rough", "YLO_rough"), 
                new = c("XLU", "XRU", "YLU", "YLO"))
@@ -312,13 +451,16 @@ server <- function(input, output) {
   
   shape <- reactive({
     if (length(input$district) > 1){
-      districts %>% filter(BEZ_RBZ %in% input$district)
+      filter(districts, BEZ_RBZ %in% input$district)
     } else{
-      landkreise %>% filter(BEZ_RBZ == input$district)
+      filter(landkreise, BEZ_RBZ == input$district)
     }
   })
   
+  coords_shape <- reactive({sf::st_coordinates(shape())})
+  
   output$plot123 <- renderPlot({
+    
     if(input$spec == "All Species"){
       p1 <- dataset() %>% ggplot() + 
         geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
@@ -326,10 +468,10 @@ server <- function(input, output) {
         scico::scale_fill_scico(name="SR", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
-                          max(sf::st_coordinates(shape())[,'X'])),
-                 ylim = c(min(sf::st_coordinates(shape())[,'Y']),
-                          max(sf::st_coordinates(shape())[,'Y']))) + 
+        coord_sf(xlim = c(min(coords_shape()[,'X']),
+                          max(coords_shape()[,'X'])),
+                 ylim = c(min(coords_shape()[,'Y']),
+                          max(coords_shape()[,'Y']))) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.2) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -344,10 +486,10 @@ server <- function(input, output) {
                                      "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
-                          max(sf::st_coordinates(shape())[,'X'])),
-                 ylim = c(min(sf::st_coordinates(shape())[,'Y']),
-                          max(sf::st_coordinates(shape())[,'Y']))) + 
+        coord_sf(xlim = c(min(coords_shape()[,'X']),
+                          max(coords_shape()[,'X'])),
+                 ylim = c(min(coords_shape()[,'Y']),
+                          max(coords_shape()[,'Y']))) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.2) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -472,10 +614,10 @@ server <- function(input, output) {
       scico::scale_fill_scico(name="Number\nof records", palette="roma", na.value= "grey50", direction=-1) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Longitude", y="Latitude") + 
-      coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
-                        max(sf::st_coordinates(shape())[,'X'])),
-               ylim = c(min(sf::st_coordinates(shape())[,'Y']),
-                        max(sf::st_coordinates(shape())[,'Y']))) + 
+      coord_sf(xlim = c(min(coords_shape()[,'X']),
+                        max(coords_shape()[,'X'])),
+               ylim = c(min(coords_shape()[,'Y']),
+                        max(coords_shape()[,'Y']))) + 
       ggspatial::annotation_scale(location="br", width_hint = 0.2) +
       ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                         height = unit(1, "cm"), width = unit(1, "cm"),
@@ -528,12 +670,12 @@ server <- function(input, output) {
         scale_y_continuous(expand=expansion(mult = c(0, .05))) + theme_bw() + 
         theme(legend.position = "none")
       
-      } else{
-        if(input$spec == "All Species"){
-          if(length(unique(sub_dat3$class_order)) == 1){
-            p6 <- plot_spacer()
-          } else{
-            sub_dat3 <- sub_dat3 %>% arrange(desc(class_order))
+    } else{
+      if(input$spec == "All Species"){
+        if(length(unique(sub_dat3$class_order)) == 1){
+          p6 <- plot_spacer()
+        } else{
+          sub_dat3 <- sub_dat3 %>% arrange(desc(class_order))
           sub_dat3$cumsum <- cumsum(sub_dat3$val)
           p6 <- sub_dat3 %>% ggplot() + geom_bar(aes(x="", y=val, fill=class_order), stat="identity", width=1) + 
             geom_text(aes(x="", y=cumsum-(val/2), label=val)) + 
@@ -543,12 +685,12 @@ server <- function(input, output) {
             theme(axis.text = element_blank(), axis.ticks = element_blank(),
                   axis.line = element_blank(), axis.title = element_blank(),
                   legend.position="none")
-          }
-        } else{
-          p6 <- plot_spacer()
         }
-          
+      } else{
+        p6 <- plot_spacer()
       }
+      
+    }
     p4 + p5 + p6
   })
   
@@ -561,10 +703,10 @@ server <- function(input, output) {
         scico::scale_fill_scico(name="SR", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
-                          max(sf::st_coordinates(shape())[,'X'])),
-                 ylim = c(min(sf::st_coordinates(shape())[,'Y']),
-                          max(sf::st_coordinates(shape())[,'Y']))) + 
+        coord_sf(xlim = c(min(coords_shape()[,'X']),
+                          max(coords_shape()[,'X'])),
+                 ylim = c(min(coords_shape()[,'Y']),
+                          max(coords_shape()[,'Y']))) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.15) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -583,10 +725,10 @@ server <- function(input, output) {
         scico::scale_fill_scico(name="Number\nof records", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
-                          max(sf::st_coordinates(shape())[,'X'])),
-                 ylim = c(min(sf::st_coordinates(shape())[,'Y']),
-                          max(sf::st_coordinates(shape())[,'Y']))) + 
+        coord_sf(xlim = c(min(coords_shape()[,'X']),
+                          max(coords_shape()[,'X'])),
+                 ylim = c(min(coords_shape()[,'Y']),
+                          max(coords_shape()[,'Y']))) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.2) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -608,10 +750,10 @@ server <- function(input, output) {
         scico::scale_fill_scico(name="SR", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
-                          max(sf::st_coordinates(shape())[,'X'])),
-                 ylim = c(min(sf::st_coordinates(shape())[,'Y']),
-                          max(sf::st_coordinates(shape())[,'Y']))) + 
+        coord_sf(xlim = c(min(coords_shape()[,'X']),
+                          max(coords_shape()[,'X'])),
+                 ylim = c(min(coords_shape()[,'Y']),
+                          max(coords_shape()[,'Y']))) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.2) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -628,10 +770,10 @@ server <- function(input, output) {
                                    "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
-                          max(sf::st_coordinates(shape())[,'X'])),
-                 ylim = c(min(sf::st_coordinates(shape())[,'Y']),
-                          max(sf::st_coordinates(shape())[,'Y']))) + 
+        coord_sf(xlim = c(min(coords_shape()[,'X']),
+                          max(coords_shape()[,'X'])),
+                 ylim = c(min(coords_shape()[,'Y']),
+                          max(coords_shape()[,'Y']))) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.2) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -648,10 +790,10 @@ server <- function(input, output) {
       facet_grid(.~jahr2) + geom_sf(data=shape(), fill="transparent", col="black") +
       scico::scale_fill_scico(name="Number\nof records", palette="roma", na.value= "grey50", direction=-1) + 
       labs(x="Longitude", y="Latitude") + 
-      coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
-                        max(sf::st_coordinates(shape())[,'X'])),
-               ylim = c(min(sf::st_coordinates(shape())[,'Y']),
-                        max(sf::st_coordinates(shape())[,'Y']))) + 
+      coord_sf(xlim = c(min(coords_shape()[,'X']),
+                        max(coords_shape()[,'X'])),
+               ylim = c(min(coords_shape()[,'Y']),
+                        max(coords_shape()[,'Y']))) + 
       ggspatial::annotation_scale(location="br", width_hint = 0.2) +
       ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                         height = unit(1, "cm"), width = unit(1, "cm"),
@@ -668,10 +810,10 @@ server <- function(input, output) {
                                  "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Longitude", y="Latitude") + 
-      coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
-                        max(sf::st_coordinates(shape())[,'X'])),
-               ylim = c(min(sf::st_coordinates(shape())[,'Y']),
-                        max(sf::st_coordinates(shape())[,'Y']))) + 
+      coord_sf(xlim = c(min(coords_shape()[,'X']),
+                        max(coords_shape()[,'X'])),
+               ylim = c(min(coords_shape()[,'Y']),
+                        max(coords_shape()[,'Y']))) + 
       ggspatial::annotation_scale(location="br", width_hint = 0.2) +
       ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                         height = unit(1, "cm"), width = unit(1, "cm"),
@@ -687,10 +829,10 @@ server <- function(input, output) {
       scico::scale_fill_scico(name="Number\nof records", palette="roma", na.value= "grey50", direction=-1) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Longitude", y="Latitude") + 
-      coord_sf(xlim = c(min(sf::st_coordinates(shape())[,'X']),
-                        max(sf::st_coordinates(shape())[,'X'])),
-               ylim = c(min(sf::st_coordinates(shape())[,'Y']),
-                        max(sf::st_coordinates(shape())[,'Y']))) + 
+      coord_sf(xlim = c(min(coords_shape()[,'X']),
+                        max(coords_shape()[,'X'])),
+               ylim = c(min(coords_shape()[,'Y']),
+                        max(coords_shape()[,'Y']))) + 
       ggspatial::annotation_scale(location="br", width_hint = 0.2) +
       ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                         height = unit(1, "cm"), width = unit(1, "cm"),
@@ -704,17 +846,17 @@ server <- function(input, output) {
   output$table1 <- DT::renderDataTable(dataset() %>% .[, c("karte", "Species richness", "Number of records")],
                                        #setnames(dat1, karte, TK25),
                                        options = list(
-                                         lengthMenu = list(c(18, 50, 100, -1), c('18', '50', '100', 'All')),
-                                         pageLength = 18
+                                         lengthMenu = list(c(25, 50, 100, -1), c('25', '50', '100', 'All')),
+                                         pageLength = 25
                                        ))
   
   output$table2 <- DT::renderDataTable(
     datatime() %>% .[,c("class_order", "jahr", "Species richness", 
-                  "Number of records", "Number of occupied grid cells")],
+                        "Number of records", "Number of occupied grid cells")],
     #setnames(dat2, c(class_order, jahr), c(Taxon, Year))
     options = list(
-      lengthMenu = list(c(18, 50, 100, -1), c('18', '50', '100', 'All')),
-      pageLength = 18
+      lengthMenu = list(c(25, 50, 100, -1), c('25', '50', '100', 'All')),
+      pageLength = 25
     ))
 }
 

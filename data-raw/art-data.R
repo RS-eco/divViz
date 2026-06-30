@@ -55,4 +55,4 @@ art_data$class_order[art_data$class == "Insecta"] <- art_data$order[art_data$cla
 art_data <- art_data %>% dplyr::select(XLU, YLU, XRU, YLO, XLU_rough, XRU_rough, YLU_rough, YLO_rough, 
                                        jahr, mon, karte, quadrant, district, class_order, family, art2) %>%
   as.data.table(); invisible(gc())
-saveRDS(art_data, "inst/extdata/art_data.rds", compress="xz")
+saveRDS(art_data, "inst/extdata/art_data.rds", compress=FALSE)
