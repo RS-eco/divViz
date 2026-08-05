@@ -21,7 +21,7 @@ This is what divViz looks like:
 knitr::include_graphics("figures/divViz.png")
 ```
 
-If you are interested to see what divViz has to offer without diving into R, click [here](https://rs-eco.shinyapps.io/divViz/).
+If you are interested to see what divViz has to offer without diving into R, click [here](https://rs-eco-divViz.share.connect.posit.cloud/).
 
 ## Installation
 
@@ -32,7 +32,7 @@ if (!require("remotes")) {
   install.packages("remotes")
 }
 remotes::install_github("RS-eco/divViz")
-````
+```
 
 ## Load package
 
@@ -50,3 +50,5 @@ You can now start the divViz Shiny app with:
 library(shiny)
 runApp()
 ```
+
+Or check it out [here](https://rs-eco-divViz.share.connect.posit.cloud/).

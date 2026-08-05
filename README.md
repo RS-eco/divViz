@@ -15,10 +15,10 @@ The main purpose of divViz is:
 
 This is what divViz looks like:
 
-<img src="figures/divViz.png" width="90%" style="display: block; margin: auto;" />
+<img src="figures/divViz.png" alt="" width="90%" style="display: block; margin: auto;" />
 
 If you are interested to see what divViz has to offer without diving
-into R, click [here](https://rs-eco.shinyapps.io/divViz/).
+into R, click [here](https://rs-eco-divViz.share.connect.posit.cloud/).
 
 ## Installation
 
@@ -49,3 +49,6 @@ You can now start the divViz Shiny app with:
 library(shiny)
 runApp()
 ```
+
+Or check it out
+[here](https://rs-eco-divViz.share.connect.posit.cloud/).

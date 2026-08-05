@@ -18,7 +18,8 @@ districts <- sf::st_transform(districts, 31468)
 load("data/landkreise.rda")
 landkreise <- sf::st_transform(landkreise, 31468)
 
-art_data <- readRDS("inst/extdata/art_data.rds")
+#art_data <- readRDS("inst/extdata/art_data.rds")
+art_data <- arrow::read_parquet("inst/extdata/art_data.parquet")
 
 # Needed for radar plot!!!
 # Almost identical to coord_polar()
@@ -49,10 +50,10 @@ CSS <- "
 .pretty input[value=Odonata]~.state label:before {
   background-color: #7570b3;
 }
-.pretty input[value=Orthoptera]~.state label:after {
+.pretty input[value=Orthoptera]~.state label:after,
+.pretty input[value=Orthoptera]~.state label:before {
   background-color: #e7298a;
-},
-.pretty input[value=Orthoptera]~.state label:before, 
+}
 "
 
 ui <- page_sidebar(
@@ -179,7 +180,6 @@ ui <- page_sidebar(
         card_header("Species overview"),
         
         h4(textOutput("subtitle1")),
-        
         plotOutput("plot123", height = 375),
         
         hr(),
@@ -299,6 +299,7 @@ server <- function(input, output) {
   })
   
   datclass <- reactive({
+    req(input$family)
     if(input$family != "All Families"){
       datclassorder()[family == input$family,]
     } else{
@@ -320,10 +321,12 @@ server <- function(input, output) {
   })
   
   output$subtitle1 <- renderText({
+    req(input$spec)
     if(input$spec == "All Species"){"Species richness"} else{"Species presence"}
   })
   
   output$subtitle2 <- renderText({
+    req(input$spec)
     if(input$spec == "All Species"){"Species richness"} else{"Species presence"}
   })
   
@@ -339,6 +342,7 @@ server <- function(input, output) {
   })
   
   dataspec <- reactive({
+    req(input$spec)
     dat <- datclassdist()
     if(input$spec != "All Species"){
       dat <- dat[art2 == input$spec,]
@@ -347,13 +351,14 @@ server <- function(input, output) {
   })
   
   dataset <- reactive({
+    req(input$spec)
     if(input$spec != "All Species"){
       if(input$res == "TK25"){
-        dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
+        dat <- dataspec()[,list(`Species richness`=uniqueN(art2), 
                                 `Number of records`=.N) , by = .(XLU, XRU, YLU, YLO, karte, class_order)
         ][`Number of records` >= input$sp_weight,]
       } else {
-        dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
+        dat <- dataspec()[,list(`Species richness`=uniqueN(art2), 
                                 `Number of records`=.N) , by = .(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order)
         ][`Number of records` >= input$sp_weight,]
         setnames(dat, old = c("XLU_rough", "XRU_rough", "YLU_rough", "YLO_rough"), 
@@ -362,11 +367,11 @@ server <- function(input, output) {
       }
     } else{
       if(input$res == "TK25"){
-        dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
+        dat <- dataspec()[,list(`Species richness`=uniqueN(art2), 
                                 `Number of records`=.N) , by = .(XLU, XRU, YLU, YLO, karte)
         ][`Number of records` >= input$sp_weight,]
       } else {
-        dat <- dataspec()[,list(`Species richness`=length(unique(art2)), 
+        dat <- dataspec()[,list(`Species richness`=uniqueN(art2), 
                                 `Number of records`=.N) , by = .(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte)
         ][`Number of records` >= input$sp_weight,]
         setnames(dat, old = c("XLU_rough", "XRU_rough", "YLU_rough", "YLO_rough"), 
@@ -377,14 +382,16 @@ server <- function(input, output) {
   })
   
   dataspeccomp <- reactive({
+    req(input$spec2, input$spec3)
     if(input$res == "TK25"){
       datclassdist()[art2 %in% c(input$spec2, input$spec3),
       ][,list(`Species richness`=length(unique(art2)), 
               `Number of records`=.N), by = .(XLU, XRU, YLU, YLO, art2, class_order)
       ][`Number of records` >= input$sp_weight,]
     } else {
-      dat <- datclassdist()[,list(`Species richness`=length(unique(art2)), 
-                                  `Number of records`=.N), by = .(XLU_rough, XRU_rough, YLU_rough, YLO_rough, art2, class_order)
+      dat <- datclassdist()[art2 %in% c(input$spec2, input$spec3),
+      ][,list(`Species richness`=length(unique(art2)), 
+              `Number of records`=.N), by = .(XLU_rough, XRU_rough, YLU_rough, YLO_rough, art2, class_order)
       ][`Number of records` >= input$sp_weight,]
       setnames(dat, old = c("XLU_rough", "XRU_rough", "YLU_rough", "YLO_rough"), 
                new = c("XLU", "XRU", "YLU", "YLO"))
@@ -396,12 +403,12 @@ server <- function(input, output) {
     if(input$res == "TK25"){
       dataspec()[,list(`Species richness`=length(unique(art2)), 
                        `Number of records`=.N,
-                       `Number of occupied grid cells`= length(unique(XLU, XRU, YLU, YLO))), by = .(jahr, class_order)
+                       `Number of occupied grid cells`= uniqueN(paste(XLU, XRU, YLU, YLO))), by = .(jahr, class_order)
       ][`Number of records` >= input$temp_weight,]
     } else {
       dataspec()[,list(`Species richness`=length(unique(art2)), 
                        `Number of records`=.N,
-                       `Number of occupied grid cells`= length(unique(XLU_rough, XRU_rough, YLU_rough, YLO_rough))), by = .(jahr, class_order)
+                       `Number of occupied grid cells`= uniqueN(paste(XLU_rough, XRU_rough, YLU_rough, YLO_rough))), by = .(jahr, class_order)
       ][`Number of records` >= input$temp_weight,]
     }
   })
@@ -457,21 +464,21 @@ server <- function(input, output) {
     }
   })
   
-  coords_shape <- reactive({sf::st_coordinates(shape())})
+  coords_shape <- reactive({sf::st_bbox(shape())})
   
   output$plot123 <- renderPlot({
-    
+    req(input$spec)
     if(input$spec == "All Species"){
       p1 <- dataset() %>% ggplot() + 
-        geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                             ymax="YLO", fill="`Species richness`")) + 
+        geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, 
+                      ymax=YLO, fill=`Species richness`)) + 
         scico::scale_fill_scico(name="SR", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(coords_shape()[,'X']),
-                          max(coords_shape()[,'X'])),
-                 ylim = c(min(coords_shape()[,'Y']),
-                          max(coords_shape()[,'Y']))) + 
+        coord_sf(xlim = c(coords_shape()['xmin'],
+                          coords_shape()['xmax']),
+                 ylim = c(coords_shape()['ymin'],
+                          coords_shape()['ymax'])) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.2) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -481,15 +488,15 @@ server <- function(input, output) {
                            legend.background = element_blank())
     } else {
       p1 <- dataset() %>% ggplot() + 
-        geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="class_order")) + 
+        geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=class_order)) + 
         scale_fill_manual(values = c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
                                      "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(coords_shape()[,'X']),
-                          max(coords_shape()[,'X'])),
-                 ylim = c(min(coords_shape()[,'Y']),
-                          max(coords_shape()[,'Y']))) + 
+        coord_sf(xlim = c(coords_shape()['xmin'],
+                          coords_shape()['xmax']),
+                 ylim = c(coords_shape()['ymin'],
+                          coords_shape()['ymax'])) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.2) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -499,7 +506,7 @@ server <- function(input, output) {
     
     if(input$spec == "All Species"){
       p2 <- datatime() %>% ggplot() + 
-        geom_bar(aes_string(x="jahr", y="`Species richness`", fill="class_order"), stat="identity") + 
+        geom_bar(aes(x=jahr, y=`Species richness`, fill=class_order), stat="identity") + 
         scale_x_continuous(expand = expansion(add=c(0,0))) + 
         scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
         scale_fill_manual(values = c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
@@ -510,8 +517,8 @@ server <- function(input, output) {
               legend.background = element_blank())
     } else {
       p2 <- datatime() %>% ggplot() + 
-        geom_bar(aes_string(x="jahr", y="`Number of occupied grid cells`",
-                            fill="class_order"), stat="identity") + 
+        geom_bar(aes(x=jahr, y=`Number of occupied grid cells`,
+                     fill=class_order), stat="identity") + 
         scale_x_continuous(expand = expansion(add=c(0,0))) + 
         scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
         scale_fill_manual(values = c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
@@ -609,15 +616,15 @@ server <- function(input, output) {
   
   output$plot456 <- renderPlot({
     p4 <- dataset() %>% ggplot() + 
-      geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                           ymax="YLO", fill="`Number of records`")) + 
+      geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, 
+                    ymax=YLO, fill=`Number of records`)) + 
       scico::scale_fill_scico(name="Number\nof records", palette="roma", na.value= "grey50", direction=-1) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Longitude", y="Latitude") + 
-      coord_sf(xlim = c(min(coords_shape()[,'X']),
-                        max(coords_shape()[,'X'])),
-               ylim = c(min(coords_shape()[,'Y']),
-                        max(coords_shape()[,'Y']))) + 
+      coord_sf(xlim = c(coords_shape()['xmin'],
+                        coords_shape()['xmax']),
+               ylim = c(coords_shape()['ymin'],
+                        coords_shape()['ymax'])) + 
       ggspatial::annotation_scale(location="br", width_hint = 0.2) +
       ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                         height = unit(1, "cm"), width = unit(1, "cm"),
@@ -626,8 +633,8 @@ server <- function(input, output) {
                          legend.title=element_text(size=12, face="bold", vjust=1.2), 
                          legend.background = element_blank())
     p5 <- datatime() %>% ggplot() + 
-      geom_bar(aes_string(x="jahr", y="`Number of records`",
-                          fill="class_order"), stat="identity") + 
+      geom_bar(aes(x=jahr, y=`Number of records`,
+                   fill="class_order"), stat="identity") + 
       scale_x_continuous(expand=expansion(add=c(0,0))) + 
       scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
       scale_fill_manual(values = c("Aves" = '#1b9e77',
@@ -697,16 +704,16 @@ server <- function(input, output) {
   output$plot7 <- renderPlot({
     if(input$spec == "All Species"){
       ggplot(data=datagroup()) + 
-        geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                             ymax="YLO", fill="`Species richness`")) + 
+        geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, 
+                      ymax=YLO, fill=`Species richness`)) + 
         facet_grid(.~class_order) + 
         scico::scale_fill_scico(name="SR", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(coords_shape()[,'X']),
-                          max(coords_shape()[,'X'])),
-                 ylim = c(min(coords_shape()[,'Y']),
-                          max(coords_shape()[,'Y']))) + 
+        coord_sf(xlim = c(coords_shape()['xmin'],
+                          coords_shape()['xmax']),
+                 ylim = c(coords_shape()['ymin'],
+                          coords_shape()['ymax'])) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.15) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -719,16 +726,16 @@ server <- function(input, output) {
   
   output$plot8 <- renderPlot({
     if(input$spec == "All Species"){
-      ggplot(data=datagroup()) + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                                                      ymax="YLO", fill="`Number of records`")) + 
+      ggplot(data=datagroup()) + geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, 
+                                               ymax=YLO, fill=`Number of records`)) + 
         facet_grid(.~class_order) + 
         scico::scale_fill_scico(name="Number\nof records", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(coords_shape()[,'X']),
-                          max(coords_shape()[,'X'])),
-                 ylim = c(min(coords_shape()[,'Y']),
-                          max(coords_shape()[,'Y']))) + 
+        coord_sf(xlim = c(coords_shape()['xmin'],
+                          coords_shape()['xmax']),
+                 ylim = c(coords_shape()['ymin'],
+                          coords_shape()['ymax'])) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.2) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -739,21 +746,27 @@ server <- function(input, output) {
     } else{
       print("Please select 'All Species' at the species input selection on the left hand side.")
     }
+    
+    validate(
+      need(input$spec == "All Species",
+           "Please select 'All Species'.")
+    )
+    
   })
   
   output$plot9 <- renderPlot({
     if(input$spec == "All Species"){
       dataspacetime()[, jahr2 := gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], by=as.numeric(input$interval))))))] %>% 
         na.omit() %>% 
-        ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="`Species richness`")) + 
+        ggplot() + geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=`Species richness`)) + 
         facet_grid(.~jahr2) + 
         scico::scale_fill_scico(name="SR", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(coords_shape()[,'X']),
-                          max(coords_shape()[,'X'])),
-                 ylim = c(min(coords_shape()[,'Y']),
-                          max(coords_shape()[,'Y']))) + 
+        coord_sf(xlim = c(coords_shape()['xmin'],
+                          coords_shape()['xmax']),
+                 ylim = c(coords_shape()['ymin'],
+                          coords_shape()['ymax'])) + 
         ggspatial::annotation_scale(location="br", width_hint = 0.2) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -764,16 +777,16 @@ server <- function(input, output) {
     } else {
       dataspacetime()[, jahr2 := gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], by=as.numeric(input$interval))))))] %>% 
         na.omit() %>% 
-        ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="class_order")) + 
+        ggplot() + geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=class_order)) + 
         facet_grid(.~jahr2) + 
         scale_fill_manual(values=c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
                                    "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Longitude", y="Latitude") + 
-        coord_sf(xlim = c(min(coords_shape()[,'X']),
-                          max(coords_shape()[,'X'])),
-                 ylim = c(min(coords_shape()[,'Y']),
-                          max(coords_shape()[,'Y']))) + 
+        coord_sf(xlim = c(coords_shape()['xmin'],
+                          coords_shape()['xmax']),
+                 ylim = c(coords_shape()['ymin'],
+                          coords_shape()['ymax'])) +
         ggspatial::annotation_scale(location="br", width_hint = 0.2) +
         ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                           height = unit(1, "cm"), width = unit(1, "cm"),
@@ -786,14 +799,14 @@ server <- function(input, output) {
   output$plot10 <- renderPlot({
     dataspacetime()[, jahr2 := gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], by=as.numeric(input$interval))))))] %>% 
       na.omit() %>% 
-      ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="`Number of records`")) + 
+      ggplot() + geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=`Number of records`)) + 
       facet_grid(.~jahr2) + geom_sf(data=shape(), fill="transparent", col="black") +
       scico::scale_fill_scico(name="Number\nof records", palette="roma", na.value= "grey50", direction=-1) + 
       labs(x="Longitude", y="Latitude") + 
-      coord_sf(xlim = c(min(coords_shape()[,'X']),
-                        max(coords_shape()[,'X'])),
-               ylim = c(min(coords_shape()[,'Y']),
-                        max(coords_shape()[,'Y']))) + 
+      coord_sf(xlim = c(coords_shape()['xmin'],
+                        coords_shape()['xmax']),
+               ylim = c(coords_shape()['ymin'],
+                        coords_shape()['ymax'])) + 
       ggspatial::annotation_scale(location="br", width_hint = 0.2) +
       ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                         height = unit(1, "cm"), width = unit(1, "cm"),
@@ -805,15 +818,15 @@ server <- function(input, output) {
   
   output$plot11 <- renderPlot({
     dataspeccomp() %>% ggplot() + 
-      geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="class_order")) +  facet_grid(.~art2) + 
+      geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=class_order)) +  facet_grid(.~art2) + 
       scale_fill_manual(values=c("Aves" = '#1b9e77', "Lepidoptera"='#d95f02',
                                  "Odonata"='#7570b3', "Orthoptera"='#e7298a')) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Longitude", y="Latitude") + 
-      coord_sf(xlim = c(min(coords_shape()[,'X']),
-                        max(coords_shape()[,'X'])),
-               ylim = c(min(coords_shape()[,'Y']),
-                        max(coords_shape()[,'Y']))) + 
+      coord_sf(xlim = c(coords_shape()['xmin'],
+                        coords_shape()['xmax']),
+               ylim = c(coords_shape()['ymin'],
+                        coords_shape()['ymax'])) + 
       ggspatial::annotation_scale(location="br", width_hint = 0.2) +
       ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                         height = unit(1, "cm"), width = unit(1, "cm"),
@@ -824,15 +837,15 @@ server <- function(input, output) {
   
   output$plot12 <- renderPlot({
     dataspeccomp() %>% ggplot() + 
-      geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                           ymax="YLO", fill="`Number of records`")) + facet_grid(.~art2) + 
+      geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, 
+                    ymax=YLO, fill=`Number of records`)) + facet_grid(.~art2) + 
       scico::scale_fill_scico(name="Number\nof records", palette="roma", na.value= "grey50", direction=-1) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Longitude", y="Latitude") + 
-      coord_sf(xlim = c(min(coords_shape()[,'X']),
-                        max(coords_shape()[,'X'])),
-               ylim = c(min(coords_shape()[,'Y']),
-                        max(coords_shape()[,'Y']))) + 
+      coord_sf(xlim = c(coords_shape()['xmin'],
+                        coords_shape()['xmax']),
+               ylim = c(coords_shape()['ymin'],
+                        coords_shape()['ymax'])) + 
       ggspatial::annotation_scale(location="br", width_hint = 0.2) +
       ggspatial::annotation_north_arrow(location = "tl", which_north = "true", 
                                         height = unit(1, "cm"), width = unit(1, "cm"),
@@ -861,5 +874,6 @@ server <- function(input, output) {
 }
 
 # Run app ----
-
+options(shiny.fullstacktrace = TRUE)
+options(shiny.error = browser)
 shinyApp(ui, server)

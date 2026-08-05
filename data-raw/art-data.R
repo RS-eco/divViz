@@ -56,3 +56,4 @@ art_data <- art_data %>% dplyr::select(XLU, YLU, XRU, YLO, XLU_rough, XRU_rough,
                                        jahr, mon, karte, quadrant, district, class_order, family, art2) %>%
   as.data.table(); invisible(gc())
 saveRDS(art_data, "inst/extdata/art_data.rds", compress=FALSE)
+write_parquet(art_data, sink="inst/extdata/art_data.parquet")

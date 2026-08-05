@@ -1,11 +1,17 @@
 # Install rsconnect
 #install.packages('rsconnect')
 
-# Set the account info from secret variables
-rsconnect::setAccountInfo(name='rs-eco', token='73966D252CAB8CE04D582EDCAEF789AE', secret='...') # Secret is available from shinyapps.io after Login
+# Set the account info from secret variables (login to shinyapps.io to see SECRET)
+#library(rsconnect)
+#rsconnect::connectCloudUser()
+
+# Create a manifest file
+rsconnect::writeManifest(appFiles="app.R")
+
+# Check app Dependencies
+rsconnect::appDependencies()
 
 # Deploy the app
-library(rsconnect)
-rsconnect::deployApp(account="rs-eco", server = 'shinyapps.io',
-                     #appDir = 'C:\\Users\\Documents\\R\\SHINY', appFiles=c('app.R','sales.RData','www/custom.css'),
-                     appName="divViz", appTitle="Visualisation tool for biodiversity data")
+options(rsconnect.verbose = TRUE)
+rsconnect::deployApp(appName="divViz", appTitle="Visualisation tool for biodiversity data", 
+                     appFiles=c("app.R", list.files("data", full.names=T), "inst/extdata/art_data.parquet"), forceUpdate=T)
