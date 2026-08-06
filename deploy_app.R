@@ -13,5 +13,5 @@ rsconnect::appDependencies()
 
 # Deploy the app
 options(rsconnect.verbose = TRUE)
-rsconnect::deployApp(appName="divViz", appTitle="Visualisation tool for biodiversity data", 
+rsconnect::deployApp(appName="divViz", appTitle="divViz - Visualisation tool for biodiversity data", 
                      appFiles=c("app.R", list.files("data", full.names=T), "inst/extdata/art_data.parquet"), forceUpdate=T)
