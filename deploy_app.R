@@ -2,8 +2,8 @@
 #install.packages('rsconnect')
 
 # Set the account info from secret variables (login to shinyapps.io to see SECRET)
-#library(rsconnect)
-#rsconnect::connectCloudUser()
+library(rsconnect)
+rsconnect::connectCloudUser()
 
 # Create a manifest file
 rsconnect::writeManifest(appFiles="app.R")
