@@ -1,17 +1,18 @@
 rm(list=ls()); invisible(gc())
 
 # Load packages ----
-#library(shinyWidgets)
-#library(DT) # datatable()
+library(shiny)
+library(shinyWidgets)
+library(DT) # datatable()
 library(ggplot2)
 library(data.table)
 library(dplyr)
 library(dbplyr)
 library(sf)
-#library(tidyr)
+library(tidyr)
 library(patchwork)
-#library(ggspatial)
-#library(scico)
+library(ggspatial)
+library(scico)
 library(plotly)
 
 # Needed for radar plot!!!
@@ -105,16 +106,16 @@ ui <- fluidPage(
                   tabPanel("Arten-Übersicht",
                            h3("Arten-Übersicht"),
                            h4(textOutput("subtitle1")),
-                           plotlyOutput("plot123", height = 400, width = 1200),  
+                           plotlyOutput("plot123", height = 400, width = "100%"),  
                            h4("Anzahl an Beobachtungen"),
-                           plotlyOutput("plot456", height = 400, width = 1230), 
+                           plotlyOutput("plot456", height = 400, width = "100%"), 
                   ),
                   tabPanel("Taxon-Vergleich",
                            h3("Taxon-Vergleich"),
                            h4("Artenvielfalt"),
-                           plotlyOutput("plot7", height = 400, width = 1200),  
+                           plotlyOutput("plot7", height = 400, width = "100%"),  
                            h4("Anzahl an Beobachtungen"),
-                           plotlyOutput("plot8", height = 400, width = 1200)
+                           plotlyOutput("plot8", height = 400, width = "100%")
                   ),
                   tabPanel("zeitlicher Vergleich",
                            h3("zeitlicher Vergleich"),
@@ -123,9 +124,9 @@ ui <- fluidPage(
                                          "10 Jahre" = 10,
                                          "15 Jahre" = 15)),
                            h4(textOutput("subtitle2")),
-                           plotlyOutput("plot9", height = 325, width = 1295),
+                           plotlyOutput("plot9", height = 325, width = "100%"),
                            h4("Anzahl an Beobachtungen"),
-                           plotlyOutput("plot10", height = 325, width = 1330)
+                           plotlyOutput("plot10", height = 325, width = "100%")
                   ),
                   tabPanel("Arten-Vergleich",
                            h3("Arten-Vergleich"),
@@ -148,14 +149,16 @@ ui <- fluidPage(
                            h3("zeitliche Übersicht"),
                            DT::dataTableOutput("table2")
                   )
-      ), width=7
+      ), width=9
     )
   )
 )
 
 # Server logic ----
 server <- function(input, output) {
-  datclassorder <- reactive({art_data %>% filter(class_order %in% input$class_order)}) %>% bindCache(input$class_order)
+  datclassorder <- reactive({
+    req(input$class_order)
+    art_data %>% filter(class_order %in% input$class_order)}) |> bindCache(input$class_order)
   
   datyearmon <- reactive({
     datclassorder() %>% filter(jahr >= input$year_weight[1],
@@ -164,32 +167,33 @@ server <- function(input, output) {
              mon <= input$month_weight[2]) 
   })
   
-  output$family_choice <- renderUI({
-    selectInput(inputId="family",
-                label="Wähle eine Familie:", 
-                choices = c("Alle Familien", sort(unique(datclassorder() %>% dplyr::select(family) %>% unlist()))),
-                selected="Alle Familien")
-  })
-  
   datclass <- reactive({
+    req(input$family)
     if(input$family != "Alle Familien"){
       datyearmon() %>% filter(family == input$family)
     } else{
       datyearmon()
     }
+  }) |> bindCache(input$family)
+  
+  output$family_choice <- renderUI({
+    selectInput(inputId="family",
+                label="Wähle eine Familie:", 
+                choices = c("Alle Familien", sort(unique(datclass()$family))),
+                selected="Alle Familien")
   })
   
   output$cat_choice <- renderUI({
     selectInput(inputId="spec",
                 label="Wähle eine Art:", 
-                choices = c("Alle Arten", sort(unique(datclass() %>% dplyr::select(art2) %>% unlist()))),
+                choices = c("Alle Arten", sort(unique(datclass()$art2))),
                 selected="Alle Arten")
   })
   
   output$cat_choice2 <- renderUI({
     selectInput(inputId="spec2",
                 label="Wähle die erste Art:", 
-                choices = sort(unique(datclass() %>% dplyr::select(art2) %>% unlist())))
+                choices = sort(unique(datclass()$art2)))
   })
   
   output$cat_choice3 <- renderUI({
@@ -201,10 +205,12 @@ server <- function(input, output) {
   })
   
   datclassdist <- reactive({
+    req(input$district)
     datclass() %>% filter(district %in% input$district)
   })
   
   dataspec <- reactive({
+    req(input$spec)
     if(input$spec != "Alle Arten"){
       datclassdist() %>% filter(art2 == input$spec)
     } else{
@@ -213,16 +219,17 @@ server <- function(input, output) {
   })
   
   dataset <- reactive({
+    req(input$spec, input$res)
     if(input$spec != "Alle Arten"){
       if(input$res == "TK25"){
         dataspec() %>% group_by(XLU, XRU, YLU, YLO, karte, class_order) %>% 
           summarise(`Species richness`=n_distinct(art2, na.rm=T), 
-                    `Number of records`=n()) %>% 
+                    `Number of records`=n(), .groups = "drop") %>% 
           filter(`Number of records` >= input$sp_weight)
       } else {
         dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte, class_order) %>% 
           summarise(`Species richness`=n_distinct(art2, na.rm=T), 
-                    `Number of records`=n()) %>% 
+                    `Number of records`=n(), .groups = "drop") %>% 
           rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
           filter(`Number of records` >= input$sp_weight)
       }
@@ -230,12 +237,12 @@ server <- function(input, output) {
       if(input$res == "TK25"){
         dataspec() %>% group_by(XLU, XRU, YLU, YLO, karte) %>% 
           summarise(`Species richness`=n_distinct(art2, na.rm=T), 
-                    `Number of records`=n()) %>% 
+                    `Number of records`=n(), .groups = "drop") %>% 
           filter(`Number of records` >= input$sp_weight)
       } else {
         dataspec() %>% group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, karte) %>% 
           summarise(`Species richness`=n_distinct(art2, na.rm=T), 
-                    `Number of records`=n()) %>% 
+                    `Number of records`=n(), .groups = "drop") %>% 
           rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
           filter(`Number of records` >= input$sp_weight)
       }
@@ -243,66 +250,76 @@ server <- function(input, output) {
   })
   
   dataspeccomp <- reactive({
+    req(input$spec2, input$spec3)
     if(input$res == "TK25"){
       datclassdist() %>% filter(art2 %in% c(input$spec2, input$spec3)) %>% 
         group_by(XLU, XRU, YLU, YLO, art2, class_order) %>% 
         summarise(`Species richness`=n_distinct(art2), 
-                  `Number of records`=n()) %>% 
+                  `Number of records`=n(), .groups = "drop") %>% 
         filter(`Number of records` >= input$sp_weight)
     } else {
       datclassdist() %>% filter(art2 %in% c(input$spec2, input$spec3)) %>% 
         group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, art2, class_order) %>% 
         summarise(`Species richness`=n_distinct(art2), 
-                  `Number of records`=n()) %>% 
+                  `Number of records`=n(), .groups = "drop") %>% 
         rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
         filter(`Number of records` >= input$sp_weight)
     }
   })
   
   datatime <- reactive({
+    req(input$res)
     if(input$res == "TK25"){
       dataspec() %>% group_by(jahr, class_order) %>% 
         summarise(`Species richness`= n_distinct(art2), 
                   `Number of records`= n(),
-                  `Number of occupied grid cells`= n_distinct(XLU, XRU, YLU, YLO)) %>% 
+                  `Number of occupied grid cells`= n_distinct(paste(XLU, XRU, YLU, YLO)),
+                  .groups = "drop") %>% 
         filter(`Number of records` >= input$temp_weight)
     } else {
       dataspec() %>% group_by(jahr, class_order) %>% 
         summarise(`Species richness`= n_distinct(art2), 
                   `Number of records`= n(),
-                  `Number of occupied grid cells`= n_distinct(XLU_rough, XRU_rough, YLU_rough, YLO_rough)) %>% 
+                  `Number of occupied grid cells`= n_distinct(paste(XLU_rough, XRU_rough, YLU_rough, YLO_rough)),
+                  .groups = "drop") %>% 
         filter(`Number of records` >= input$temp_weight)
     }
   })
   
   dataspacetime <- reactive({
+    req(input$res)
     if(input$res == "TK25"){
       dataspec() %>% group_by(jahr, XLU, XRU, YLU, YLO, karte, class_order) %>% 
         summarise(`Species richness`=n_distinct(art2), 
-                  `Number of records`=n()) %>% 
+                  `Number of records`=n(),
+                  .groups = "drop") %>% 
         filter(`Number of records` >= input$sp_weight)
     } else {
       dataspec() %>% ungroup() %>% 
         group_by(jahr, XLU_rough, XRU_rough, YLU_rough, YLO_rough, class_order) %>% 
         summarise(`Species richness`=n_distinct(art2), 
-                  `Number of records`=n()) %>% 
+                  `Number of records`=n(),
+                  .groups = "drop") %>% 
         rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
         filter(`Number of records` >= input$sp_weight)
     }
   })
   
   datagroup <- reactive({
+    req(input$res)
     if(input$res == "TK25"){
       datclassdist() %>% 
         group_by(XLU, XRU, YLU, YLO, class_order) %>% 
         summarise(`Species richness`=n_distinct(art2),
-                  `Number of records`=n()) %>% 
+                  `Number of records`=n(),
+                  .groups = "drop") %>% 
         filter(`Number of records` >= input$sp_weight)
     } else {
       datclassdist() %>% 
         group_by(XLU_rough, XRU_rough, YLU_rough, YLO_rough, class_order) %>% 
         summarise(`Species richness`=n_distinct(art2),
-                  `Number of records`=n()) %>% 
+                  `Number of records`=n(),
+                  .groups = "drop") %>% 
         rename(XLU=XLU_rough, XRU=XRU_rough, YLU=YLU_rough, YLO=YLO_rough) %>%
         filter(`Number of records` >= input$sp_weight)
     }
@@ -312,12 +329,14 @@ server <- function(input, output) {
     dataspec() %>% group_by(district, class_order) %>% 
       summarise(`Species richness`=n_distinct(art2),
                 `Number of records`=n(),
-                `Number of occupied grid cells`= n_distinct(XLU_rough, XRU_rough, YLU_rough, YLO_rough)) %>% 
+                `Number of occupied grid cells`= n_distinct(paste(XLU_rough, XRU_rough, YLU_rough, YLO_rough)),
+                .groups = "drop") %>% 
       tidyr::pivot_longer(names_to="var", values_to="val", cols=-c(district, class_order)) %>%
       tidyr::drop_na()
   })
   
   shape <- reactive({
+    req(input$district)
     if (length(input$district) > 1){
       districts %>% filter(BEZ_RBZ %in% input$district)
     } else{
@@ -325,7 +344,12 @@ server <- function(input, output) {
     }
   })
   
+  bbox <- reactive({
+    st_bbox(shape())
+  })
+  
   output$subtitle1 <- renderText({
+    req(input$spec)
     if(input$spec == "Alle Arten"){
       "Artenvielfalt"
     } else{
@@ -334,6 +358,7 @@ server <- function(input, output) {
   })
   
   output$subtitle2 <- renderText({
+    req(input$spec)
     if(input$spec == "Alle Arten"){
       "Artenvielfalt"
     } else{
@@ -342,38 +367,34 @@ server <- function(input, output) {
   })
   
   output$plot123 <- renderPlotly({
+    req(input$spec)
     if(input$spec == "Alle Arten"){
       p1 <- dataset() %>% ggplot() + 
-        geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                             ymax="YLO", fill="`Species richness`")) + 
+        geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, 
+                      ymax=YLO, fill=`Species richness`)) + 
         scico::scale_fill_scico(name="Artenvielfalt", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Breitengrad", y="Längengrad") + 
-        coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                          max(st_coordinates(shape())[,'X'])),
-                 ylim = c(min(st_coordinates(shape())[,'Y']),
-                          max(st_coordinates(shape())[,'Y']))) + 
+        coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
+                 ylim=c(bbox()$ymin,bbox()$ymax)) + 
         theme_bw() + theme(legend.key.height=unit(1.5, "in"), 
                            legend.title=element_text(size=12, face="bold", vjust=0.85), 
-                           legend.background = element_blank())
+                           legend.background = element_blank()) |> plotly::ggplotly()
+      
     } else {
       p1 <- dataset() %>% ggplot() + 
-        geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", 
-                             fill="class_order")) + 
+        geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO,  fill=class_order)) + 
         scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Breitengrad", y="Längengrad") + 
-        coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                          max(st_coordinates(shape())[,'X'])),
-                 ylim = c(min(st_coordinates(shape())[,'Y']),
-                          max(st_coordinates(shape())[,'Y']))) + 
-        theme_bw() + theme(legend.position="none", legend.background = element_blank())
+        coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
+                 ylim=c(bbox()$ymin,bbox()$ymax)) +  
+        theme_bw() + theme(legend.position="none", legend.background = element_blank()) |> plotly::ggplotly()
     }
     if(input$spec == "Alle Arten"){
       p2 <- datatime() %>% ggplot() + 
-        geom_bar(aes_string(x="jahr", y="`Species richness`",
-                            fill="class_order"), stat="identity") + 
+        geom_bar(aes(x=jahr, y=`Species richness`, fill= class_order), stat="identity") + 
         scale_x_continuous(expand=expansion(add=c(0,0))) + 
         scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
         scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
@@ -381,11 +402,10 @@ server <- function(input, output) {
         labs(x="Jahr", fill="Taxon") + theme_bw() +
         theme(legend.position="bottom", legend.title=element_text(size=12, face="bold"), 
               legend.text = element_text(size=12), legend.key.size = unit(0.5, 'cm'),
-              legend.background = element_blank())
+              legend.background = element_blank()) |> plotly::ggplotly()
     } else {
       p2 <- datatime() %>% ggplot() + 
-        geom_bar(aes_string(x="jahr", y="`Number of occupied grid cells`",
-                            fill="class_order"), stat="identity") + 
+        geom_bar(aes(x=jahr, y=`Number of occupied grid cells`, fill=class_order), stat="identity") + 
         scale_x_continuous(expand=expansion(add=c(0,0))) + 
         scale_y_continuous(expand = expansion(mult = c(0, .05))) + 
         scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
@@ -393,7 +413,7 @@ server <- function(input, output) {
         labs(x="Jahr", y="Anzahl an besetzten Gridzellen", fill="Taxon") + theme_bw() + 
         theme(legend.position="bottom", legend.title=element_text(size=12, face="bold"), 
               legend.text = element_text(size=12), legend.key.size = unit(0.5, 'cm'),
-              legend.background = element_blank())
+              legend.background = element_blank()) |> plotly::ggplotly()
     }
     if(input$spec == "Alle Arten"){
       sub_dat1 <- datadistrict() %>% tidyr::drop_na() %>% filter(var == "Species richness") %>% dplyr::select(-c(var))
@@ -402,7 +422,7 @@ server <- function(input, output) {
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="", y="Species richness") + 
         scale_y_continuous(expand=expansion(mult = c(0, .05))) + theme_bw() + 
-        theme(legend.position = "none", axis.text.x = element_text(angle=45))
+        theme(legend.position = "none", axis.text.x = element_text(angle=45)) |> plotly::ggplotly()
     } else{
       sub_dat2 <- datadistrict() %>% tidyr::drop_na() %>% filter(var == "Number of occupied grid cells") %>% 
         dplyr::select(-c(var))
@@ -411,30 +431,26 @@ server <- function(input, output) {
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="", y="Anzahl an besetzten Gridzellen") + 
         scale_y_continuous(expand=expansion(mult = c(0, .05))) + theme_bw() + 
-        theme(legend.position = "none", axis.text.x = element_text(angle=45))
+        theme(legend.position = "none", axis.text.x = element_text(angle=45)) |> plotly::ggplotly()
     }
-    plotly::subplot(plotly::ggplotly(p1), plotly::ggplotly(p2), plotly::ggplotly(p3), nrows = 1) %>%
+    plotly::subplot(p1, p2, p3, nrows = 1) %>%
       layout(xaxis = list(zerolinecolor = '#ffff', zerolinewidth = 2, gridcolor = 'ffff'), 
              yaxis = list(zerolinecolor = '#ffff', zerolinewidth = 2, gridcolor = 'ffff'))
   })
   
   output$plot456 <- renderPlotly({
     p4 <- dataset() %>% ggplot() + 
-      geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                           ymax="YLO", fill="`Number of records`")) + 
+      geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=`Number of records`)) + 
       scico::scale_fill_scico(name="Anzahl an\nBeobachtungen", palette="roma", na.value= "grey50", direction=-1) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Breitengrad", y="Längengrad") + 
-      coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                        max(st_coordinates(shape())[,'X'])),
-               ylim = c(min(st_coordinates(shape())[,'Y']),
-                        max(st_coordinates(shape())[,'Y']))) + 
+      coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
+               ylim=c(bbox()$ymin,bbox()$ymax)) + 
       theme_bw() + theme(legend.key.height=unit(2, "in"),
                          legend.title=element_text(size=12, face="bold", vjust=1.2), 
                          legend.background = element_blank())
     p5 <- datatime() %>% ggplot() + 
-      geom_bar(aes_string(x="jahr", y="`Number of records`",
-                          fill="class_order"), stat="identity") + 
+      geom_bar(aes(x=jahr, y=`Number of records`, fill=class_order), stat="identity") + 
       scale_x_continuous(expand=expansion(add=c(0,0))) + 
       scale_y_continuous(expand=expansion(mult = c(0, .05))) + 
       scale_fill_manual(values = c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
@@ -457,45 +473,47 @@ server <- function(input, output) {
   })
   
   output$plot7 <- renderPlotly({
-    if(input$spec == "Alle Arten"){
-      p <- ggplot(data=datagroup()) + 
-        geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                             ymax="YLO", fill="`Species richness`")) + 
-        facet_grid(.~class_order) + 
-        scico::scale_fill_scico(name="Artenvielfalt", palette="roma", na.value= "grey50", direction=-1) + 
-        geom_sf(data=shape(), fill="transparent", col="black") +
-        labs(x="Breitengrad", y="Längengrad") + 
-        coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                          max(st_coordinates(shape())[,'X'])),
-                 ylim = c(min(st_coordinates(shape())[,'Y']),
-                          max(st_coordinates(shape())[,'Y']))) + 
-        theme_bw() + theme(strip.background = element_blank(), legend.key.height=unit(0.5, "in"),
-                           legend.title=element_text(size=12, face="bold"), 
-                           strip.text=element_text(size=12, face="bold"))
-      ggplotly(p)
-    }
+    validate(
+      need(
+        input$spec == "Alle Arten",
+        "Bitte wähle 'Alle Arten' bei der Arten-Auswahl im linken Menü aus."
+      )
+    )
+    
+    p <- ggplot(data=datagroup()) + 
+      geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=`Species richness`)) + 
+      facet_grid(.~class_order) + 
+      scico::scale_fill_scico(name="Artenvielfalt", palette="roma", na.value= "grey50", direction=-1) + 
+      geom_sf(data=shape(), fill="transparent", col="black") +
+      labs(x="Breitengrad", y="Längengrad") + 
+      coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
+               ylim=c(bbox()$ymin,bbox()$ymax)) + 
+      theme_bw() + theme(strip.background = element_blank(), legend.key.height=unit(0.5, "in"),
+                         legend.title=element_text(size=12, face="bold"), 
+                         strip.text=element_text(size=12, face="bold"))
+    ggplotly(p)
   })
   
   output$plot8 <- renderPlotly({
-    if(input$spec == "Alle Arten"){
-      p <- ggplot(data=datagroup()) + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                                                           ymax="YLO", fill="`Number of records`")) + 
-        facet_grid(.~class_order) + 
-        scico::scale_fill_scico(name="Anzahl an\nBeobachtungen", palette="roma", 
-                                na.value= "grey50", direction=-1) + 
-        geom_sf(data=shape(), fill="transparent", col="black") +
-        labs(x="Breitengrad", y="Längengrad") + 
-        coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                          max(st_coordinates(shape())[,'X'])),
-                 ylim = c(min(st_coordinates(shape())[,'Y']),
-                          max(st_coordinates(shape())[,'Y']))) + 
-        theme_bw() + theme(strip.background = element_blank(), legend.key.height=unit(0.5, "in"),
-                           legend.title=element_text(size=12, face="bold"), 
-                           strip.text=element_text(size=12, face="bold"))
-      ggplotly(p)
-    } else{
-      print("Bitte wähle 'Alle Arten' bei der Arten-Auswahl im linken Menü aus.")
-    }
+    validate(
+      need(
+        input$spec == "Alle Arten",
+        "Bitte wähle 'Alle Arten' bei der Arten-Auswahl im linken Menü aus."
+      )
+    )
+    
+    p <- ggplot(data=datagroup()) + geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=`Number of records`)) + 
+      facet_grid(.~class_order) + 
+      scico::scale_fill_scico(name="Anzahl an\nBeobachtungen", palette="roma", 
+                              na.value= "grey50", direction=-1) + 
+      geom_sf(data=shape(), fill="transparent", col="black") +
+      labs(x="Breitengrad", y="Längengrad") + 
+      coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
+               ylim=c(bbox()$ymin,bbox()$ymax)) + 
+      theme_bw() + theme(strip.background = element_blank(), legend.key.height=unit(0.5, "in"),
+                         legend.title=element_text(size=12, face="bold"), 
+                         strip.text=element_text(size=12, face="bold"))
+    ggplotly(p)
   })
   
   output$plot9 <- renderPlotly({
@@ -503,16 +521,13 @@ server <- function(input, output) {
       p <- dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], 
                                                                    input$year_weight[2], by=as.numeric(input$interval)))) %>% 
         mutate(jahr2 = gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", jahr2)))) %>% tidyr::drop_na() %>% 
-        ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                                                             ymax="YLO", fill="`Species richness`")) + 
+        ggplot() + geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=`Species richness`)) + 
         facet_grid(.~jahr2) + 
         scico::scale_fill_scico(name="Artenvielfalt", palette="roma", na.value= "grey50", direction=-1) + 
         geom_sf(data=shape(), fill="transparent", col="black") +
         labs(x="Breitengrad", y="Längengrad") + 
-        coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                          max(st_coordinates(shape())[,'X'])),
-                 ylim = c(min(st_coordinates(shape())[,'Y']),
-                          max(st_coordinates(shape())[,'Y']))) + 
+        coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
+                 ylim=c(bbox()$ymin,bbox()$ymax)) + 
         theme_bw() + theme(strip.background = element_blank(), legend.key.height=unit(0.5, "in"),
                            legend.title=element_text(size=12, face="bold"), 
                            strip.text=element_text(size=12, face="bold"))
@@ -521,16 +536,13 @@ server <- function(input, output) {
       p <- dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], 
                                                                    by=as.numeric(input$interval)))) %>% 
         mutate(jahr2 = gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", jahr2)))) %>% tidyr::drop_na() %>% 
-        ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", 
-                                                             fill="class_order")) + 
+        ggplot() + geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=class_order)) + 
         facet_grid(.~jahr2) + geom_sf(data=shape(), fill="transparent", col="black") +
         scale_fill_manual(values=c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                    "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="Breitengrad", y="Längengrad") + 
-        coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                          max(st_coordinates(shape())[,'X'])),
-                 ylim = c(min(st_coordinates(shape())[,'Y']),
-                          max(st_coordinates(shape())[,'Y']))) + 
+        coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
+                 ylim=c(bbox()$ymin,bbox()$ymax)) + 
         theme_bw() + theme(legend.position="none", legend.background = element_blank(),
                            strip.background = element_blank(), strip.text=element_text(size=12, face="bold"))
       ggplotly(p)
@@ -541,16 +553,14 @@ server <- function(input, output) {
     p <- dataspacetime() %>% mutate(jahr2 = cut(jahr, breaks=seq(input$year_weight[1], input$year_weight[2], 
                                                                  by=as.numeric(input$interval)))) %>% tidyr::drop_na() %>% 
       mutate(jahr2 = gsub("[,]", " - ", gsub("[]]", "", gsub("[(]", "", jahr2)))) %>% 
-      ggplot() + geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", fill="`Number of records`")) + 
+      ggplot() + geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=`Number of records`)) + 
       facet_grid(.~jahr2) + 
       scico::scale_fill_scico(name="Anzahl an\nBeobachtungen", palette="roma", 
                               na.value= "grey50", direction=-1) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Breitengrad", y="Längengrad") + 
-      coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                        max(st_coordinates(shape())[,'X'])),
-               ylim = c(min(st_coordinates(shape())[,'Y']),
-                        max(st_coordinates(shape())[,'Y']))) + 
+      coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
+               ylim=c(bbox()$ymin,bbox()$ymax)) + 
       theme_bw() + theme(strip.background = element_blank(), legend.key.height=unit(0.5, "in"),
                          legend.title=element_text(size=12, face="bold"), 
                          strip.text=element_text(size=12, face="bold"))
@@ -559,16 +569,13 @@ server <- function(input, output) {
   
   output$plot11 <- renderPlotly({
     p <- dataspeccomp() %>% ggplot() + 
-      geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", ymax="YLO", 
-                           fill="class_order")) + 
+      geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=class_order)) + 
       facet_grid(.~art2) + geom_sf(data=shape(), fill="transparent", col="black") +
       scale_fill_manual(values=c("Vögel" = '#1b9e77', "Schmetterlinge"='#d95f02',
                                  "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
       labs(x="Breitengrad", y="Längengrad") + 
-      coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                        max(st_coordinates(shape())[,'X'])),
-               ylim = c(min(st_coordinates(shape())[,'Y']),
-                        max(st_coordinates(shape())[,'Y']))) + 
+      coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
+               ylim=c(bbox()$ymin,bbox()$ymax)) + 
       theme_bw() + theme(legend.position="none", legend.background = element_blank(),
                          strip.background = element_blank(), strip.text=element_text(size=12, face="bold"))
     ggplotly(p)
@@ -576,15 +583,12 @@ server <- function(input, output) {
   
   output$plot12 <- renderPlotly({
     p <- dataspeccomp() %>% ggplot() + 
-      geom_rect(aes_string(xmin="XLU", xmax="XRU", ymin="YLU", 
-                           ymax="YLO", fill="`Number of records`")) + facet_grid(.~art2) + 
+      geom_rect(aes(xmin=XLU, xmax=XRU, ymin=YLU, ymax=YLO, fill=`Number of records`)) + facet_grid(.~art2) + 
       scico::scale_fill_scico(name="Anzahl an\nBeobachtungen", palette="roma", na.value= "grey50", direction=-1) + 
       geom_sf(data=shape(), fill="transparent", col="black") +
       labs(x="Breitengrad", y="Längengrad") + 
-      coord_sf(xlim = c(min(st_coordinates(shape())[,'X']),
-                        max(st_coordinates(shape())[,'X'])),
-               ylim = c(min(st_coordinates(shape())[,'Y']),
-                        max(st_coordinates(shape())[,'Y']))) + 
+      coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
+               ylim=c(bbox()$ymin,bbox()$ymax)) + 
       theme_bw() + theme(legend.position="right", legend.key.height=unit(0.5, "in"),
                          legend.title=element_text(size=12, face="bold", vjust=1.2), 
                          legend.background = element_blank(), strip.background = element_blank(), 

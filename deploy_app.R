@@ -1,11 +1,18 @@
 # Install rsconnect
 #install.packages('rsconnect')
 
-# Set the account info from secret variables
-#rsconnect::setAccountInfo(name='rs-eco', token='...', secret='...')
+# Set the account info from secret variables (login to shinyapps.io to see SECRET)
+library(rsconnect)
+rsconnect::connectCloudUser()
+
+# Create a manifest file
+rsconnect::writeManifest(appFiles="app.R")
+
+# Check app Dependencies
+rsconnect::appDependencies()
 
 # Deploy the app
-library(rsconnect)
-rsconnect::deployApp(account="rs-eco", server = 'shinyapps.io',
-                     #appDir = 'C:\\Users\\Documents\\R\\SHINY', appFiles=c('app.R','sales.RData','www/custom.css'),
-                     appName="divViz_plotly", appTitle="Visualisierungs-Tool für Biodiversitäts-Daten")
+options(rsconnect.verbose = TRUE)
+rsconnect::deployApp(appFiles = c("app.R", "data", "inst/extdata"),
+                     appName="divViz_plotly", appTitle="divViz - Visualisierungs-Tool für Biodiversitäts-Daten", forceUpdate=T)
+

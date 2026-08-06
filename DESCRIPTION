@@ -8,8 +8,8 @@ Authors@R:
 Maintainer: RS-eco <rs-eco@posteo.de>
 Description: R package for Shiny visualisation tool of biodiversity data.
 Depends: R (>= 4.0)
-Suggests: knitr, rmarkdown, shiny, shinyWidgets, DT, ggplot2, data.table, dplyr, dbplyr, plotly,
-    sf, tidyr, patchwork, ggspatial, scico
+Imports: shiny, shinyWidgets, DT, ggplot2, data.table, tidyr, dplyr, plotly, sf, patchwork, ggspatial, scico
+Suggests: knitr, rmarkdown, dbplyr
 License: file LICENSE
 LazyData: TRUE
 LazyDataCompression: xz
