@@ -7,7 +7,6 @@ library(DT) # datatable()
 library(ggplot2)
 library(data.table)
 library(dplyr)
-library(dbplyr)
 library(sf)
 library(tidyr)
 library(patchwork)
@@ -158,13 +157,21 @@ ui <- fluidPage(
 server <- function(input, output) {
   datclassorder <- reactive({
     req(input$class_order)
-    art_data %>% filter(class_order %in% input$class_order)}) |> bindCache(input$class_order)
+    art_data %>% filter(class_order %in% input$class_order)
+    }) |> bindCache(input$class_order)
   
   datyearmon <- reactive({
     datclassorder() %>% filter(jahr >= input$year_weight[1],
                                jahr <= input$year_weight[2]) %>%
       filter(mon >= input$month_weight[1],
              mon <= input$month_weight[2]) 
+  })
+  
+  output$family_choice <- renderUI({
+    selectInput(inputId="family",
+                label="Wähle eine Familie:", 
+                choices = c("Alle Familien", sort(unique(datyearmon()$family))),
+                selected="Alle Familien")
   })
   
   datclass <- reactive({
@@ -174,14 +181,7 @@ server <- function(input, output) {
     } else{
       datyearmon()
     }
-  }) |> bindCache(input$family)
-  
-  output$family_choice <- renderUI({
-    selectInput(inputId="family",
-                label="Wähle eine Familie:", 
-                choices = c("Alle Familien", sort(unique(datclass()$family))),
-                selected="Alle Familien")
-  })
+  }) |> bindCache(datyearmon(), input$family)
   
   output$cat_choice <- renderUI({
     selectInput(inputId="spec",
@@ -379,7 +379,7 @@ server <- function(input, output) {
                  ylim=c(bbox()$ymin,bbox()$ymax)) + 
         theme_bw() + theme(legend.key.height=unit(1.5, "in"), 
                            legend.title=element_text(size=12, face="bold", vjust=0.85), 
-                           legend.background = element_blank()) |> plotly::ggplotly()
+                           legend.background = element_blank())
       
     } else {
       p1 <- dataset() %>% ggplot() + 
@@ -390,7 +390,7 @@ server <- function(input, output) {
         labs(x="Breitengrad", y="Längengrad") + 
         coord_sf(xlim=c(bbox()$xmin,bbox()$xmax),
                  ylim=c(bbox()$ymin,bbox()$ymax)) +  
-        theme_bw() + theme(legend.position="none", legend.background = element_blank()) |> plotly::ggplotly()
+        theme_bw() + theme(legend.position="none", legend.background = element_blank())
     }
     if(input$spec == "Alle Arten"){
       p2 <- datatime() %>% ggplot() + 
@@ -402,7 +402,7 @@ server <- function(input, output) {
         labs(x="Jahr", fill="Taxon") + theme_bw() +
         theme(legend.position="bottom", legend.title=element_text(size=12, face="bold"), 
               legend.text = element_text(size=12), legend.key.size = unit(0.5, 'cm'),
-              legend.background = element_blank()) |> plotly::ggplotly()
+              legend.background = element_blank())
     } else {
       p2 <- datatime() %>% ggplot() + 
         geom_bar(aes(x=jahr, y=`Number of occupied grid cells`, fill=class_order), stat="identity") + 
@@ -413,7 +413,7 @@ server <- function(input, output) {
         labs(x="Jahr", y="Anzahl an besetzten Gridzellen", fill="Taxon") + theme_bw() + 
         theme(legend.position="bottom", legend.title=element_text(size=12, face="bold"), 
               legend.text = element_text(size=12), legend.key.size = unit(0.5, 'cm'),
-              legend.background = element_blank()) |> plotly::ggplotly()
+              legend.background = element_blank())
     }
     if(input$spec == "Alle Arten"){
       sub_dat1 <- datadistrict() %>% tidyr::drop_na() %>% filter(var == "Species richness") %>% dplyr::select(-c(var))
@@ -422,7 +422,7 @@ server <- function(input, output) {
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="", y="Species richness") + 
         scale_y_continuous(expand=expansion(mult = c(0, .05))) + theme_bw() + 
-        theme(legend.position = "none", axis.text.x = element_text(angle=45)) |> plotly::ggplotly()
+        theme(legend.position = "none", axis.text.x = element_text(angle=45))
     } else{
       sub_dat2 <- datadistrict() %>% tidyr::drop_na() %>% filter(var == "Number of occupied grid cells") %>% 
         dplyr::select(-c(var))
@@ -431,9 +431,9 @@ server <- function(input, output) {
                                      "Libellen"='#7570b3', "Heuschrecken"='#e7298a')) + 
         labs(x="", y="Anzahl an besetzten Gridzellen") + 
         scale_y_continuous(expand=expansion(mult = c(0, .05))) + theme_bw() + 
-        theme(legend.position = "none", axis.text.x = element_text(angle=45)) |> plotly::ggplotly()
+        theme(legend.position = "none", axis.text.x = element_text(angle=45))
     }
-    plotly::subplot(p1, p2, p3, nrows = 1) %>%
+    plotly::subplot(plotly::ggplotly(p1), plotly::ggplotly(p2), plotly::ggplotly(p3), nrows = 1) %>%
       layout(xaxis = list(zerolinecolor = '#ffff', zerolinewidth = 2, gridcolor = 'ffff'), 
              yaxis = list(zerolinecolor = '#ffff', zerolinewidth = 2, gridcolor = 'ffff'))
   })

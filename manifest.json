@@ -514,12 +514,14 @@
         "Maintainer": "Gábor Csárdi <gabor@posit.co>",
         "Repository": "CRAN",
         "Date/Publication": "2026-04-09 09:50:18 UTC",
-        "Built": "R 4.6.0; x86_64-pc-linux-gnu; 2026-06-07 08:57:17 UTC; unix",
+        "Built": "R 4.6.0; x86_64-pc-linux-gnu; 2026-04-30 10:11:01 UTC; unix",
         "RemoteType": "standard",
-        "RemotePkgRef": "cli",
         "RemoteRef": "cli",
+        "RemotePkgRef": "cli",
         "RemoteRepos": "https://cloud.r-project.org",
-        "RemoteSha.Version": "3.6.6"
+        "RemoteReposName": "CRAN",
+        "RemotePkgPlatform": "source",
+        "RemoteSha": "3.6.6"
       }
     },
     "commonmark": {
@@ -3283,7 +3285,7 @@
   },
   "files": {
     "app.R": {
-      "checksum": "d4d91f7210883dca2e09026bd2d47c53"
+      "checksum": "0719974f74e25243c22d65ce28ff1473"
     },
     "renv.lock": {
       "checksum": "a8cff728d226dc86e1a4bb59b3da158e"
